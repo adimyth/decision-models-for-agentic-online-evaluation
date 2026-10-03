@@ -188,6 +188,57 @@ def main():
             dd[judge]["repeat_n_states"] = len(stds)
         m["direct"] = dd
 
+    # ---- extra direct judges (pplx, luna6)
+    extra = {}
+    for judge in ("pplx", "luna6"):
+        d = load(f"direct_{judge}", args.tag)
+        if not d:
+            continue
+        d0 = {x["run_id"]: x for x in d if x["rep"] == 0}
+
+        def corr_p(x):
+            a = x[judge].get("answers") or {}
+            if judge == "pplx":
+                return (a.get("pplx_correct") or {}).get("noul")
+            return a.get("luna6_correct")
+
+        lat = [x[judge]["latency_s"] for x in d0.values() if x[judge].get("answers") and x[judge].get("latency_s")]
+        cost = [x[judge].get("cost_usd") or 0 for x in d0.values()]
+        toks = [x[judge]["usage"].get("input_tokens") or 0 for x in d0.values() if x[judge].get("answers")]
+        e = {"n": len(d0), "scored": sum(1 for x in d0.values() if x[judge].get("answers")),
+             "latency_p50_s": pct(lat, 50), "latency_p95_s": pct(lat, 95), "cost_mean_usd": float(np.mean(cost)) if cost else None,
+             "input_tokens_mean": float(np.mean(toks)) if toks else None}
+        ys, ps = [], []
+        for r in runs:
+            g = gold.get(r["run_id"], {}).get("grade"); x = d0.get(r["run_id"])
+            pv = corr_p(x) if x else None
+            if g in ("CORRECT", "INCORRECT") and pv is not None:
+                ys.append(1 if g == "CORRECT" else 0); ps.append(pv)
+        if len(set(ys)) == 2:
+            e["correct_auroc_correct_vs_incorrect"] = float(roc_auc_score(ys, ps))
+            e["wrong_flagged_at_0.5"] = sum(1 for y, pv in zip(ys, ps) if y == 0 and pv < .5)
+            e["n_wrong"] = ys.count(0)
+            e["correct_flagged_at_0.5"] = sum(1 for y, pv in zip(ys, ps) if y == 1 and pv < .5)
+            e["mean_on_correct"] = float(np.mean([pv for y, pv in zip(ys, ps) if y == 1]))
+            e["mean_on_wrong"] = float(np.mean([pv for y, pv in zip(ys, ps) if y == 0]))
+        # agreement with jev online on 'correct' binary
+        pairs = [(score(r["run_id"], "jev_correct"), corr_p(d0[r["run_id"]])) for r in runs if r["run_id"] in d0]
+        pairs = [(a, b) for a, b in pairs if a is not None and b is not None]
+        if pairs:
+            e["binary_agreement_with_jev_correct"] = float(np.mean([(a >= .5) == (b >= .5) for a, b in pairs]))
+        reps = defaultdict(list)
+        for x in d:
+            v = corr_p(x)
+            if v is not None:
+                reps[x["qid"]].append(v)
+        stds = [np.std(v) for v in reps.values() if len(v) >= 3]
+        flips = [1 if len({t >= .5 for t in v}) > 1 else 0 for v in reps.values() if len(v) >= 3]
+        e["repeat_correct_std_mean"] = float(np.mean(stds)) if stds else None
+        e["repeat_flip_rate"] = float(np.mean(flips)) if flips else None
+        e["repeat_n_states"] = len(stds)
+        extra[judge] = e
+    m["extra_judges"] = extra
+
     # ---- misses: Jev confidently wrong vs gold
     misses = []
     for r in runs:

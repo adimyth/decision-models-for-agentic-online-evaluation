@@ -5,13 +5,14 @@ import sys
 from pathlib import Path
 
 LEDGER = Path(__file__).resolve().parents[2] / "results" / "ledger.json"
-CAPS = {"openai": 10.0, "jev": 5.0}
+CAPS = {"openai": 10.0, "jev": 5.0, "perplexity": 5.0}
 STOP_FRACTION = 0.8  # abort if cumulative + projected would pass 80% of the cap
 
 PRICES = {  # USD per million tokens (input, output)
     "gpt-6-luna": (0.10, 0.50),  # not available on this key
     "gpt-5.6-luna": (0.20, 1.20),  # verified 2026-10-03 from public pricing trackers
     "jev-1.13.0": (0.042, 0.0),
+    "pplx-decider-v1-27b": (0.04, 0.0),
 }
 JEV_OVERHEAD_TOKENS = 270
 
@@ -19,7 +20,7 @@ JEV_OVERHEAD_TOKENS = 270
 def _load() -> dict:
     if LEDGER.exists():
         return json.loads(LEDGER.read_text())
-    return {"openai": 0.0, "jev": 0.0}
+    return {"openai": 0.0, "jev": 0.0, "perplexity": 0.0}
 
 
 def spent(service: str) -> float:
@@ -51,6 +52,10 @@ def over_cap(service: str) -> bool:
 def cost_openai(model: str, input_tokens: int, output_tokens: int) -> float:
     pin, pout = PRICES[model]
     return (input_tokens * pin + output_tokens * pout) / 1e6
+
+
+def cost_pplx(input_tokens: int) -> float:
+    return input_tokens * PRICES["pplx-decider-v1-27b"][0] / 1e6
 
 
 def cost_jev(input_tokens: int) -> float:

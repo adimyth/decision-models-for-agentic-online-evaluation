@@ -1,0 +1,22 @@
+[ledger] direct gpt-6-luna judge calls: projected openai spend $0.3628; spent so far $1.8857; cap $10.00 (stop at 80%)
+[plan] judge luna6: avg state 8776 tokens; 387 calls; wall clock about 19 min
+[1/287] 2.26s in=5347 ok=True 
+[26/287] 1.94s in=7697 ok=True 
+[51/287] 2.64s in=3641 ok=True 
+[76/287] 2.09s in=10640 ok=True 
+[101/287] 1.82s in=6509 ok=True 
+[126/287] 2.06s in=11873 ok=True 
+[151/287] 2.21s in=7615 ok=True 
+[176/287] 2.31s in=8527 ok=True 
+[201/287] 1.83s in=4881 ok=True 
+[226/287] 1.93s in=4224 ok=True 
+[251/287] 1.94s in=5598 ok=True 
+[276/287] 2.82s in=13956 ok=True 
+[287/287] 2.44s in=18636 ok=True 
+[repeat 1/5] done
+[repeat 2/5] done
+[repeat 3/5] done
+[repeat 4/5] done
+[repeat 5/5] done
+[done] 15.0 min; ledger {"openai": 2.2492463000000003, "jev": 0.1661677919999998, "perplexity": 0.7277208799999986}
+exit 0

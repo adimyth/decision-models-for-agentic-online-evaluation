@@ -1,0 +1,22 @@
+[ledger] direct Perplexity Decisions calls: projected perplexity spend $0.1565; spent so far $0.0000; cap $5.00 (stop at 80%)
+[plan] judge pplx: avg state 8425 tokens; 387 calls; wall clock about 19 min
+[1/287] 0.64s in=27159 ok=True 
+[26/287] 0.60s in=40509 ok=True 
+[51/287] 0.93s in=18309 ok=True 
+[76/287] 0.80s in=55389 ok=True 
+[101/287] 0.58s in=33599 ok=True 
+[126/287] 0.75s in=63944 ok=True 
+[151/287] 0.60s in=39644 ok=True 
+[176/287] 0.88s in=44799 ok=True 
+[201/287] 0.46s in=24999 ok=True 
+[226/287] 0.45s in=21094 ok=True 
+[251/287] 0.48s in=28929 ok=True 
+[276/287] 1.29s in=73914 ok=True 
+[287/287] 1.19s in=99374 ok=True 
+[repeat 1/5] done
+[repeat 2/5] done
+[repeat 3/5] done
+[repeat 4/5] done
+[repeat 5/5] done
+[done] 4.8 min; ledger {"openai": 1.991816099999998, "jev": 0.1661677919999998, "perplexity": 0.7255325599999985}
+exit 0
