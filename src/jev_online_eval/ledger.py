@@ -9,8 +9,8 @@ CAPS = {"openai": 10.0, "jev": 5.0}
 STOP_FRACTION = 0.8  # abort if cumulative + projected would pass 80% of the cap
 
 PRICES = {  # USD per million tokens (input, output)
-    "gpt-6-luna": (0.10, 0.50),
-    "gpt-5.6-luna": (0.10, 0.50),  # assumption, verified in step 1 from the pricing page
+    "gpt-6-luna": (0.10, 0.50),  # not available on this key
+    "gpt-5.6-luna": (0.20, 1.20),  # verified 2026-10-03 from public pricing trackers
     "jev-1.13.0": (0.042, 0.0),
 }
 JEV_OVERHEAD_TOKENS = 270

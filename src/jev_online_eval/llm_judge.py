@@ -1,4 +1,4 @@
-"""gpt-6-luna as a conventional LLM judge answering the same five questions with structured output.
+"""gpt-5.6-luna as a conventional LLM judge answering the same five questions with structured output.
 
 Used by the direct-latency side script. The online version is configured in the LangSmith UI
 with the same prompt text (see render_prompt()).
@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from .questions import QUESTIONS, render_for_prompt
 
-JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "gpt-6-luna")
+JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "gpt-5.6-luna")
 
 
 class Verdict(BaseModel):

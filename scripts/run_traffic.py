@@ -24,7 +24,7 @@ from jev_online_eval import ledger  # noqa: E402
 from jev_online_eval.agent import AGENT_MODEL, build_agent  # noqa: E402
 
 # Per-question estimates; replaced by measured values from smoke run if present.
-EST_COST_PER_Q = 0.004
+EST_COST_PER_Q = 0.006
 EST_SECONDS_PER_Q = 40
 
 
@@ -50,6 +50,12 @@ def measured_estimates() -> tuple[float, float]:
     return (sum(r["cost_usd"] for r in rows) / len(rows), sum(r["latency_s"] for r in rows) / len(rows))
 
 
+def _text(content) -> str:
+    if isinstance(content, list):
+        return " ".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in content).strip()
+    return content or ""
+
+
 def run_one(agent, q: dict, tag: str) -> dict:
     run_id = str(uuid.uuid4())
     t0 = time.time()
@@ -70,7 +76,7 @@ def run_one(agent, q: dict, tag: str) -> dict:
                 out_tok += um.get("output_tokens", 0)
             for tc in getattr(m, "tool_calls", []) or []:
                 tool_calls.append(tc["name"])
-        rec.update(ok=True, answer=msgs[-1].content if msgs else "", input_tokens=in_tok,
+        rec.update(ok=True, answer=_text(msgs[-1].content) if msgs else "", input_tokens=in_tok,
                    output_tokens=out_tok, cost_usd=ledger.cost_openai(AGENT_MODEL, in_tok, out_tok),
                    n_tool_calls=len(tool_calls), tool_calls=tool_calls, n_messages=len(msgs))
     except Exception as e:  # noqa: BLE001

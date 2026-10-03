@@ -8,7 +8,7 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from deepagents import create_deep_agent
 
-AGENT_MODEL = os.environ.get("AGENT_MODEL", "gpt-6-luna")
+AGENT_MODEL = os.environ.get("AGENT_MODEL", "gpt-5.6-luna")
 MAX_PAGE_TOKENS = 4000
 _enc = tiktoken.get_encoding("o200k_base")
 
@@ -52,5 +52,5 @@ def fetch_page(url: str) -> str:
 
 
 def build_agent():
-    model = ChatOpenAI(model=AGENT_MODEL, timeout=60, max_retries=3)
+    model = ChatOpenAI(model=AGENT_MODEL, timeout=60, max_retries=3, use_responses_api=True)
     return create_deep_agent(model=model, tools=[web_search, fetch_page], system_prompt=SYSTEM_PROMPT)

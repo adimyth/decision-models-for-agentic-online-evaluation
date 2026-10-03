@@ -1,4 +1,4 @@
-"""Grade each agent answer against the SimpleQA gold answer with gpt-6-luna (SimpleQA's own scheme).
+"""Grade each agent answer against the SimpleQA gold answer with gpt-5.6-luna (SimpleQA's own scheme).
 
 Usage: uv run scripts/grade_gold.py --tag main
 Writes results/gold_<tag>.jsonl with grade in {CORRECT, INCORRECT, NOT_ATTEMPTED}.
@@ -19,7 +19,7 @@ from langchain_openai import ChatOpenAI  # noqa: E402
 from langsmith import tracing_context  # noqa: E402
 from jev_online_eval import ledger  # noqa: E402
 
-GRADER_MODEL = "gpt-6-luna"
+GRADER_MODEL = "gpt-5.6-luna"
 # Condensed from OpenAI simple-evals SimpleQA grader template.
 TEMPLATE = """Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
 

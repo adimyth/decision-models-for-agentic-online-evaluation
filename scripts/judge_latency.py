@@ -1,7 +1,7 @@
 """Direct judge comparison on the recorded traces: latency, cost, repeatability.
 
 Pulls the root runs from LangSmith, builds the same State both online evaluators see, and
-sends it directly to Jev and to gpt-6-luna. --repeats N re-asks the first 20 states N times.
+sends it directly to Jev and to the LLM judge. --repeats N re-asks the first 20 states N times.
 
 Usage: uv run scripts/judge_latency.py --tag main --repeats 5 --repeat-n 20
 """
@@ -45,7 +45,7 @@ def main():
     llm_proj = n_calls * ledger.cost_openai(llm_judge.JUDGE_MODEL, int(avg_tok) + 600, 80)
     print(f"[plan] avg state {avg_tok:.0f} tokens; {n_calls} calls per judge; wall clock about {n_calls*2/60:.0f} min")
     ledger.check("jev", jev_proj, "direct Jev calls")
-    ledger.check("openai", llm_proj, "direct gpt-6-luna judge calls")
+    ledger.check("openai", llm_proj, "direct LLM judge calls")
 
     out = ROOT / "results" / f"direct_{args.tag}.jsonl"
     with out.open("w") as f, tracing_context(enabled=False):
