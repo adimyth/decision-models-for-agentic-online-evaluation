@@ -1,6 +1,8 @@
 # Jev for online evaluation
 
-Online evaluation means a judge scores your production traces as they arrive, and the scores sit on the traces for dashboards and alerts. Almost nobody runs it on every trace. [LangSmith's guide](https://docs.langchain.com/langsmith/online-evaluations) suggests applying the evaluator to 10% of traces to control costs, and [Langfuse](https://langfuse.com/blog/2026-09-23-catching-conversation-signals-in-langfuse) describes the same habit: with LLM-as-a-judge at scale, costs "were primarily contained through sampling". I did the same on my own agents, sampled a few percent, and then stopped looking at those too.
+Online evaluation means a judge scores your production traces as they arrive, and the scores sit on the traces for dashboards and alerts.
+
+Almost nobody runs it on every trace. [LangSmith's guide](https://docs.langchain.com/langsmith/online-evaluations) suggests applying the evaluator to 10% of traces to control costs, and [Langfuse](https://langfuse.com/blog/2026-09-23-catching-conversation-signals-in-langfuse) describes the same habit: with LLM-as-a-judge at scale, costs "were primarily contained through sampling". I did the same on my own agents, sampled a few percent, and then stopped looking at those too.
 
 TypeSafe released [Jev](https://typesafe.ai), a decision model that answers typed questions about a piece of context and returns probabilities instead of prose, at $0.042 per million input tokens. Three of the launch-week posts measured it as a judge:
 
@@ -12,7 +14,12 @@ Each of those compares Jev with a human label or a stronger model on recorded ex
 
 ## Setup
 
-There are four parts to this: an agent that produces traces, five questions asked about every trace, four judges that answer them, and a gold answer to check the judges against.
+Four parts:
+
+1. An agent that produces traces.
+2. Five questions asked about every trace.
+3. Four judges that answer them.
+4. A gold answer to check the judges against.
 
 ### The agent
 
@@ -36,11 +43,18 @@ An online evaluator is a judge that reads each trace as it arrives and writes sc
 
 </div>
 
-The `correct` question is the one that matters most and the hardest to answer, because an online judge never sees the gold answer. Production traffic has no answer key. The judge has to decide from the trace alone, which is exactly the situation you are in when you monitor a live agent.
+The `correct` question is the one that matters most and the hardest to answer.
+
+> An online judge never sees the gold answer. Production traffic has no answer key. The judge decides from the trace alone, which is exactly your situation when you monitor a live agent.
 
 ### The four judges
 
-Two kinds of model answered the checklist. Decision models take the five questions as structured input and return five structured answers. Chat models only take text, so for them the same five questions are written out in a prompt, the trace is pasted underneath, and the model is told to reply as a JSON object with one field per question. The prompt route is how LLM-as-judge evaluators have always been built; it is the baseline.
+Two kinds of model answered the checklist.
+
+- **Decision models** (Jev, Perplexity Decisions) take the five questions as structured input and return five structured answers.
+- **Chat models** (gpt-5.6-luna, gpt-6-luna) only take text. The same five questions are written out in a prompt, the trace is pasted underneath, and the model is told to reply as a JSON object with one field per question.
+
+The prompt route is how LLM-as-judge evaluators have always been built. It is the baseline.
 
 <div className="wide-table">
 
@@ -53,7 +67,9 @@ Two kinds of model answered the checklist. Decision models take the five questio
 
 </div>
 
-The first two are LangSmith's own online evaluators, created in its UI on the tracing project, and they fire automatically on every new trace. That is the setup this essay is testing. The other two were added for comparison. LangSmith has no built-in for them, so a script sent each trace to them and posted the answers back as feedback, which is the self-hosted way to run an online evaluator.
+The first two are LangSmith's own online evaluators. They fire automatically on every new trace, and they are the setup this essay is testing.
+
+The other two were added for comparison. LangSmith has no built-in for them, so a script sent each trace to them and posted the answers back as feedback. That is the self-hosted way to run an online evaluator.
 
 This is what three of the five questions look like as Jev receives them. The `state` is the trace; `{{input}}` and `{{output}}` are LangSmith variables holding the run's input and output.
 
@@ -110,9 +126,15 @@ and a JSON schema forces the reply into `{"llm_correct": 0.93, "llm_confidence":
 
 ### The reference and the measurements
 
-After the run I graded every final answer against its SimpleQA gold answer using the SimpleQA grading scheme, so each trace is labelled right, wrong or not attempted. That label is what the judges' `correct` scores are checked against.
+After the run I graded every final answer against its SimpleQA gold answer using the SimpleQA grading scheme. Each trace is labelled `CORRECT`, `INCORRECT` or `NOT_ATTEMPTED`, and that label is what the judges' `correct` scores are checked against.
 
-From the two LangSmith evaluators I measured cost per trace, the lag between a run finishing and its scores appearing, and whether every trace got scored. To measure each judge's own speed without LangSmith's queue in the way, I also sent the exact rendered state of every trace to all four judges directly, and sent 20 of them six times each to check repeatability.
+Measured:
+
+- **Cost per trace**, from the input tokens each vendor billed.
+- **Lag**, from a run finishing to its scores appearing on the trace.
+- **Coverage**, whether every trace got every score.
+- **Judge latency**, by sending the exact rendered state of every trace to all four judges directly, outside LangSmith's queue.
+- **Repeatability**, by sending 20 of those states six times each.
 
 ## What it cost
 
@@ -126,11 +148,40 @@ From the two LangSmith evaluators I measured cost per trace, the lag between a r
 
 </div>
 
-Each figure uses the input token count the vendor itself billed for the same rendered state, which carries fetched web pages. The last row is the surprise. Jev and Perplexity list almost the same price per million tokens, yet Perplexity costs 4.4× more per trace. The reason is how they count. I sent one 15K-character state with one, two and five questions to both. Jev billed 5.8K, 5.9K and 6.2K tokens: the state once, plus a little per question. Perplexity billed 5.6K, 11.1K and 27.6K: the state again for every question. With a single question the two cost the same. With the five questions this experiment asks per trace, Perplexity costs what gpt-5.6-luna does. Compare judges on cost per trace at your question count, never on list price. For the whole experiment, 300 agent runs plus 287 evaluations by each judge, Jev cost 12 cents, gpt-6-luna 27 cents, gpt-5.6-luna 55 cents and Perplexity 55 cents. LangSmith's evaluators tab shows the two native judges as a daily spend chart, so their running cost is visible without any of my scripts.
+Each figure uses the input tokens the vendor itself billed for the same rendered state, which carries fetched web pages.
 
 ![Judge cost per evaluated trace](img/cost.png)
 
-Jev is about 4.5× cheaper than gpt-5.6-luna and twice as cheap as gpt-6-luna configured the same way, not the 100× in the launch post, which compared against Claude Sonnet. Against a cheap modern LLM the judge was already affordable. The cost that dominates at scale is a different one: every online evaluator run upgrades the trace to extended data retention, which LangSmith bills at $5 per 1K traces. At 10K traces a day that is $50 a day, more than both judges combined, and it is the same whichever judge you pick. My project was on the long-lived tier from the start, so I did not pay it here. Budget for the traces before the judge.
+For the whole experiment, 300 agent runs plus 287 evaluations by each judge:
+
+- Jev: 12 cents.
+- gpt-6-luna: 27 cents.
+- gpt-5.6-luna: 55 cents.
+- Perplexity: 55 cents.
+
+LangSmith's evaluators tab shows the two native judges as a daily spend chart, so their running cost is visible without any of my scripts.
+
+### Why Perplexity costs what gpt-5.6-luna does
+
+Jev and Perplexity list almost the same price per million tokens, yet Perplexity costs 4.4× more per trace. The last row of the table is why. I sent one 15K-character state with one, two and five questions to both:
+
+| Questions in the request | Jev billed | Perplexity billed |
+|---|---|---|
+| 1 | 5.8K | 5.6K |
+| 2 | 5.9K | 11.1K |
+| 5 | 6.2K | 27.6K |
+
+Jev reads the state once and the questions share it. Perplexity bills the state again for every question. With one question they cost the same; with five, Perplexity costs what gpt-5.6-luna does.
+
+> Compare judges on cost per trace at your question count, never on list price.
+
+### The judge was not the expensive part
+
+Jev is about 4.5× cheaper than gpt-5.6-luna and twice as cheap as gpt-6-luna configured the same way. That is not the 100× in the launch post, which compared against Claude Sonnet. Against a cheap modern LLM the judge was already affordable.
+
+The cost that dominates at scale is a different one. Every online evaluator run upgrades the trace to extended data retention, which LangSmith bills at $5 per 1K traces. That is more than ten times the Jev cost, and it is the same whichever judge you pick. My project was on the long-lived tier from the start, so I did not pay it here.
+
+> Budget for the traces before the judge.
 
 ## How fast the scores arrived
 
@@ -147,15 +198,39 @@ Jev is about 4.5× cheaper than gpt-5.6-luna and twice as cheap as gpt-6-luna co
 
 </div>
 
-The decision models are fast: Jev answers in 0.42 seconds at the median and Perplexity in 0.67, against about 2.1 seconds for either LLM. Jev the online evaluator is barely faster than the LLM one, because both wait in the same LangSmith scheduling queue for a minute or more before either model is called. If you need scores within seconds of a trace landing, the queue is your bottleneck and Jev does not fix it. If you need them within a couple of minutes for dashboards and alerts, both work.
+Two different things are in that table.
+
+- **The model.** Jev answers in 0.42 s at the median and Perplexity in 0.67 s, against about 2.1 s for either LLM. Five times faster.
+- **The online evaluator.** Jev's scores landed on the trace 69 s after the run ended, gpt-5.6-luna's 80 s. Both spend a minute or more in LangSmith's scheduling queue before either model is called.
+
+So:
+
+- If you need scores within seconds of a trace landing, the queue is your bottleneck and Jev does not fix it.
+- If you need them within a couple of minutes for dashboards and alerts, both work.
 
 ## Did every trace get scored
 
-Of 300 requests, 287 finished and 13 hit the agent's recursion limit while looping on searches. The evaluators only fire on successful root runs, so neither judge scored those 13. The traces most likely to be interesting are the ones online evaluation skips.
+Of 300 requests:
 
-Of the 287 finished traces, the LLM evaluator scored all 287 with all five keys. Jev scored 286. The one it missed was a 12-tool-call trace whose rendered state came to about 31.7K tokens, and the evaluator failed with "the model's context limit was exceeded". Jev's limit is 32K tokens and LangSmith maps the whole run output in by default, so long agent traces fall off the edge. Map a narrower variable than the whole output, as the error message says. Perplexity's limit is 262K tokens and it scored that trace without complaint; the two LLM judges did too.
+- 287 finished.
+- 13 hit the agent's recursion limit while looping on searches.
 
-This is what one scored trace looks like, with both judges' feedback keys on it. The agent's answer here is wrong against gold, and both judges called it correct:
+The evaluators only fire on successful root runs, so neither judge scored those 13.
+
+> The traces most likely to be interesting are the ones online evaluation skips.
+
+Of the 287 finished traces:
+
+- gpt-5.6-luna scored all 287 with all five keys.
+- Jev scored 286.
+
+The one Jev missed was a 12-tool-call trace whose rendered state came to about 31.7K tokens. The evaluator failed with:
+
+> The model's context limit was exceeded. Narrow the input/output variable mapping or select a smaller sample, then test again.
+
+Jev's limit is 32K tokens and LangSmith maps the whole run output in by default, so long agent traces fall off the edge. The fix is in the message: map a narrower variable than the whole output. Perplexity's limit is 262K tokens and it scored that trace without complaint, as did both LLMs.
+
+This is what one scored trace looks like with both evaluators' feedback keys on it. The agent's answer is wrong against gold, and both judges called it correct:
 
 ```json
 {
@@ -180,11 +255,17 @@ This is what one scored trace looks like, with both judges' feedback keys on it.
 
 ## Do the scores mean anything
 
-The agent got 268 of 287 answers right against gold, 17 wrong, 2 not attempted. Seventeen negatives is a thin basis, so treat the accuracy numbers as indicative.
+Against gold, the agent got:
+
+- 268 right.
+- 17 wrong.
+- 2 not attempted.
+
+Seventeen negatives is a thin basis, so treat the accuracy numbers as indicative.
 
 <div className="wide-table">
 
-| Reference-free "is the answer correct" | Jev | Perplexity Decisions | gpt-6-luna | gpt-5.6-luna |
+| Reference-free `correct` | Jev | Perplexity Decisions | gpt-6-luna | gpt-5.6-luna |
 |---|---|---|---|---|
 | Mean score when the agent was right | 0.87 | 0.97 | 1.00 | 0.99 |
 | Mean score when the agent was wrong | 0.67 | 0.86 | 0.91 | 0.96 |
@@ -195,37 +276,85 @@ The agent got 268 of 287 answers right against gold, 17 wrong, 2 not attempted. 
 
 </div>
 
-Read the table in three lines. All four judges give the same yes or no verdict on 98% of traces, and none of them catches more than two of the 17 wrong answers, because a reference-free judge cannot see that a faithfully quoted web page disagrees with the gold answer. The judges differ in how much their score moves when the agent is wrong: Jev drops by 0.20 on average, Perplexity by 0.11, gpt-6-luna by 0.09 and gpt-5.6-luna by 0.03. So if the agent started getting more answers wrong, Jev's daily average would visibly fall, Perplexity's would dip, and gpt-5.6-luna's would barely move. That is what makes a score usable on a drift chart, and it is the only quality difference between these judges that matters for online monitoring.
+Read it in three lines.
 
-AUROC tells the same story with one twist: Perplexity ranks right and wrong answers best (0.90) because its scores are tightly consistent, while Jev's larger drop comes with more spread. Both decision models beat both LLMs on this measure.
+1. **All four judges agree on the yes or no verdict 98% of the time**, and none catches more than two of the 17 wrong answers. A reference-free judge cannot see that a faithfully quoted web page disagrees with the gold answer.
+2. **They differ in how much the score moves when the agent is wrong.** Jev drops by 0.20 on average, Perplexity by 0.11, gpt-6-luna by 0.09, gpt-5.6-luna by 0.03.
+3. **That movement is what makes a score usable on a drift chart.** If the agent started getting more answers wrong, Jev's daily average would visibly fall, Perplexity's would dip, and gpt-5.6-luna's would barely move.
 
-Repeatability did not separate them. I sent 20 states six times each to every judge. None flipped a single binary verdict. Perplexity returned identical probabilities every time, gpt-6-luna and gpt-5.6-luna moved by 0.002 to 0.003, and Jev by 0.008. The variance advantage the launch post measured against sampling LLM judges does not show up against structured-output LLMs on this task.
+It is the only quality difference between these judges that matters for online monitoring.
+
+AUROC tells the same story with one twist. Perplexity ranks right and wrong answers best, at 0.90, because its scores are tightly consistent. Jev's larger drop comes with more spread. Both decision models beat both LLMs.
+
+### Repeatability
+
+I sent 20 states six times each to every judge.
+
+- None flipped a single binary verdict.
+- Perplexity returned identical probabilities every time.
+- gpt-6-luna and gpt-5.6-luna moved by 0.002 to 0.003.
+- Jev moved by 0.008.
+
+The variance advantage the launch post measured against sampling LLM judges does not show up against structured-output LLMs on this task.
 
 ## Where Jev was wrong
 
-Fifteen wrong answers got a Jev "correct" probability above 0.5, and three correct answers got one below.
+Fifteen wrong answers got a Jev `correct` probability above 0.5, and three correct answers got one below.
 
-- Most of the fifteen are answers that faithfully repeat a source that disagrees with the gold answer: 1941 instead of 1942 for a Columbia master's degree, 3:02:25 instead of 3:02:24 for a cycle race, "Pierre Ledoux" instead of "Paul Ledoux" for the 1972 Eddington Medal, 560 passengers instead of 583 at Tenerife because the agent excluded crew. A reference-free judge with the same web page in front of it cannot see these. Neither judge did, and only a judge with the gold answer could.
-- A few are genuine misses of the kind TypeSafe documents, arithmetic and dates: the Dark Souls patch dated 23 October against a gold of 22 October got 0.60, and the passenger count got 0.91 despite the answer itself saying the total "including crew" was different.
-- The three false alarms, 0.45 to 0.49 on correct answers about Delhi's forest cover, Pavlov's psychic secretion and Oprah's 164 acres, look like Jev being unsure on numeric answers rather than wrong. The LLM gave all three 0.97 or more.
-- Jev's "grounded" score correlated only 0.65 with the LLM's and ran lower on average, 0.94 against 0.99. I read the six lowest Jev scores expecting to find unsupported claims. Five of the six were correct answers that quoted their source, such as Pavlov for psychic secretion at 0.57 and a Terraria patch name at 0.67. Only the lowest, a forest-cover figure at 0.18, was one both judges doubted. So the lower Jev scores look like hesitation on short numeric or name answers, not detected hallucination, and I would not alert on them.
+**Most of the fifteen faithfully repeat a source that disagrees with the gold answer.**
 
-Jev cannot explain itself, so every one of these took a human reading the trace. The LLM judge's one-line comment was accurate about what it had looked at on all 17 wrong answers, saying for example that 3:02:25 "matches the fetched Wikipedia event table", and then scored the answer correct anyway. The explanation was right about the evidence and told me nothing about the verdict.
+- 1941 instead of 1942 for a Columbia master's degree.
+- 3:02:25 instead of 3:02:24 for a cycle race.
+- "Pierre Ledoux" instead of "Paul Ledoux" for the 1972 Eddington Medal.
+- 560 passengers instead of 583 at Tenerife, because the agent excluded crew.
+
+A reference-free judge with the same web page in front of it cannot see these. Neither judge did. Only a judge with the gold answer could.
+
+**A few are the misses TypeSafe documents: arithmetic and dates.**
+
+- The Dark Souls patch dated 23 October against a gold of 22 October got 0.60.
+- The passenger count got 0.91, although the answer itself said the total "including crew" was different.
+
+**The three false alarms look like hesitation on numbers, not errors.** Delhi's forest cover, Pavlov's psychic secretion and Oprah's 164 acres scored 0.45 to 0.49. The LLM gave all three 0.97 or more.
+
+**The `grounded` score is not a hallucination detector.** It correlated only 0.65 with the LLM's and ran lower on average, 0.94 against 0.99. I read the six lowest Jev scores expecting unsupported claims. Five were correct answers that quoted their source, such as Pavlov at 0.57 and a Terraria patch name at 0.67. Only the lowest, a forest-cover figure at 0.18, was one both judges doubted. I would not alert on it.
+
+Jev cannot explain itself, so every one of these took a human reading the trace. The LLM judge's one-line comment was accurate about what it had looked at on all 17 wrong answers. On the cycle race it wrote that 3:02:25 "matches the fetched Wikipedia event table", and then scored the answer correct anyway.
+
+> The explanation was right about the evidence and told me nothing about the verdict.
 
 ## What to take away
 
-If you have been sampling a few percent of traces because the judge was too expensive, you can stop. Jev scores a trace with five questions for about four hundredths of a cent, gpt-6-luna for a tenth of a cent, and gpt-5.6-luna or Perplexity for a fifth of a cent. At 10K traces a day that is $4 to $19, all of it small next to the $38 the agent itself costs.
+If you have been sampling a few percent of traces because the judge was too expensive, you can stop.
+
+| Judge | Cost per trace, five questions |
+|---|---|
+| Jev | about four hundredths of a cent |
+| gpt-6-luna | a tenth of a cent |
+| gpt-5.6-luna, Perplexity | a fifth of a cent |
+| The agent run itself | four tenths of a cent |
 
 Three things to check before you switch it on:
 
-1. **The platform bill, not the judge bill.** On LangSmith, every evaluated trace moves to extended retention at $5 per 1K traces. At 10K traces a day that is $50, ten times the Jev cost. Price the traces first.
+1. **The platform bill, not the judge bill.** On LangSmith, every evaluated trace moves to extended retention at $5 per 1K traces, more than ten times the Jev cost. Price the traces first.
 2. **What you will do with a score that arrives a minute late.** Both judges landed on the trace 70 to 110 seconds after the run ended, almost all of it LangSmith's queue. Fine for dashboards and daily alerts. Not fine for blocking or routing a live response; that needs a call from inside the agent, where Jev's 0.4 seconds does matter.
-3. **Which traces it will skip.** Failed runs were not evaluated at all, and one long trace overflowed Jev's 32K context. Decide what you want to happen to those before you trust the coverage number.
+3. **Which traces it will skip.** Failed runs were not evaluated at all, and one long trace overflowed Jev's 32K context. Decide what should happen to those before you trust the coverage number.
 
-On what the scores are worth: for the reference-free question "is this answer correct", the decision models give a usable drift signal and the LLM judges do not, because the LLMs say 0.98 to almost everything. Jev's score moves most when the agent is wrong; Perplexity's is the most consistent but bills the state once per question, so at five questions it costs four times as much per trace. No judge catches an individual wrong answer, because most wrong answers here were faithful summaries of a web page that disagreed with the reference. Use a decision model online for aggregate quality tracking and for structural questions like "did the agent answer", and keep a reference-based check for per-answer correctness.
+On what the scores are worth:
+
+- For the reference-free question "is this answer correct", the decision models give a usable drift signal and the LLM judges do not, because the LLMs say 0.98 to almost everything.
+- Jev's score moves most when the agent is wrong. Perplexity's is the most consistent, but it bills the state once per question, so at five questions it costs four times as much per trace.
+- No judge catches an individual wrong answer, because most wrong answers here were faithful summaries of a web page that disagreed with the reference.
+
+> Use a decision model online for aggregate quality tracking and for structural questions like "did the agent answer". Keep a reference-based check for per-answer correctness.
 
 This experiment says nothing about whether Jev can judge multi-step agent behaviour such as wrong tool choices or policy violations. That needs an agent with known-correct trajectories, and it is the next test to run.
 
 ## Method notes
 
-300 SimpleQA questions, fixed random subset, 6 concurrent agent runs, 21.7 minutes of wall clock. Agent and LLM judge on gpt-5.6-luna at $0.20 in and $1.20 out per million tokens, gpt-6-luna at $0.10 and $0.50, both through the Responses API. Jev pinned to `jev-1.13.0`, Perplexity `pplx-decider-v1-27b` at $0.04 per million input tokens. Jev and gpt-5.6-luna ran as LangSmith online evaluators; Perplexity and gpt-6-luna ran on the direct path only, with their verdicts posted to the traces afterwards. Total spend as billed by the providers: about $2.80 on OpenAI for the agent, grading, the two LangSmith-run gpt-5.6-luna evaluations per trace and the direct-call passes; $0.28 on Jev, of which $0.12 was the LangSmith evaluator and $0.17 the direct calls; $0.73 on Perplexity. Gold grading used the SimpleQA grader prompt with gpt-5.6-luna, so a few of the 17 "wrong" answers may be grader or gold errors; I did not adjudicate them by hand.
+- 300 SimpleQA questions, fixed random subset, 6 concurrent agent runs, 21.7 minutes of wall clock.
+- Agent and LLM judge on `gpt-5.6-luna` at $0.20 in and $1.20 out per million tokens; `gpt-6-luna` at $0.10 and $0.50. Both through the Responses API.
+- Jev pinned to `jev-1.13.0`. Perplexity `pplx-decider-v1-27b` at $0.04 per million input tokens.
+- Jev and gpt-5.6-luna ran as LangSmith online evaluators. Perplexity and gpt-6-luna ran on the direct path only, with their verdicts posted to the traces afterwards.
+- Spend as billed by the providers: about $2.80 on OpenAI for the agent, grading, the LangSmith-run gpt-5.6-luna evaluations and the direct-call passes; $0.28 on Jev, of which $0.12 was the LangSmith evaluator and $0.16 the direct calls; $0.73 on Perplexity.
+- Gold grading used the SimpleQA grader prompt with gpt-5.6-luna, so a few of the 17 "wrong" answers may be grader or gold errors. I did not adjudicate them by hand.
