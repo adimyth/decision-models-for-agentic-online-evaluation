@@ -2,19 +2,19 @@
 
 Online evaluation means a judge scores your production traces as they arrive, and the scores sit on the traces for dashboards and alerts. Almost nobody runs it on every trace. [LangSmith's guide](https://docs.langchain.com/langsmith/online-evaluations) suggests applying the evaluator to 10% of traces to control costs, and [Langfuse](https://langfuse.com/blog/2026-09-23-catching-conversation-signals-in-langfuse) describes the same habit: with LLM-as-a-judge at scale, costs "were primarily contained through sampling". I did the same on my own agents, sampled a few percent, and then stopped looking at those too.
 
-In September 2026 TypeSafe released [Jev](https://typesafe.ai), a decision model that answers typed questions about a piece of context and returns probabilities instead of prose, at $0.042 per million input tokens. The launch-week posts show how to use it as a judge, and three of them measure it:
+TypeSafe released [Jev](https://typesafe.ai), a decision model that answers typed questions about a piece of context and returns probabilities instead of prose, at $0.042 per million input tokens. Three of the launch-week posts measured it as a judge:
 
 - [LangChain](https://www.langchain.com/blog/jev-agent-evals-langsmith) judged five recorded agent runs 100 times each: Jev matched the human label on all 500, gpt-5.6-luna on 96.4%, Claude Sonnet on 80%.
 - [Arize](https://arize.com/blog/jev-as-a-judge/) reports a threshold-tuned Jev matching Claude Opus 5 at 87% on a hallucination benchmark, at about 1/300 of the cost.
 - [Langfuse](https://langfuse.com/blog/2026-09-22-running-evals-with-jev) quotes a Good Start Labs study: Jev agreed with Claude Fable 5.1 on 91.5% of 6,003 rubric checks.
-- [Openlayer](https://www.openlayer.com/blog/introducing-jevals-agent-evals-guardrails) compares cost against Ragas on 20 rows.
-- [Datadog](https://datadoghq.com/blog/jev-evals-agent-observability) and [DeepEval](https://deepeval.com/integrations/models/typesafe-ai) show the integration.
 
-Every accuracy figure above compares Jev with a human label or a stronger model on recorded examples. Several of the posts then argue that a judge this cheap and fast means you can stop sampling. What I could not find is the measurement behind that argument: Jev running on a live project at 100% sampling, with the lag, coverage and cost per trace that result, and gold answers to check the scores against. This essay reports that for one real agent.
+Each of those compares Jev with a human label or a stronger model on recorded examples. Several launch posts then argue that a judge this cheap and fast means you can stop sampling. What I could not find is the measurement behind that argument: Jev running on a live project at 100% sampling, with the lag, coverage and cost per trace that result, and gold answers to check the scores against. This essay reports that for one real agent.
 
 ## Setup
 
 I built a small web-research agent with Deep Agents on gpt-5.6-luna. It has two tools, `web_search` (DuckDuckGo via the ddgs library) and `fetch_page` (httpx plus trafilatura, pages truncated to 4K tokens), and a system prompt asking for a short cited answer. I sent it 300 questions from OpenAI's SimpleQA set, which are short factual questions written by people, each with a verified gold answer, and traced everything to one LangSmith project.
+
+Code and data: [adimyth/jev-online-eval](https://github.com/adimyth/jev-online-eval).
 
 On that project I created two online evaluators, both on root runs at a sampling rate of 100%, both asking the same five questions about each trace:
 
@@ -56,7 +56,7 @@ The five questions, with wording adapted from Openlayer's jevals library: did th
 }
 ```
 
-After the run I graded each final answer against the SimpleQA gold answer with the SimpleQA grading scheme, pulled every feedback item and every evaluator run back through the SDK, and separately sent the exact same rendered state to both judges directly, to measure call latency and repeatability without LangSmith's queue in the way. On that direct path I added two more judges for comparison: Perplexity's [Decisions API](https://docs.perplexity.ai/docs/decisions/quickstart) (`pplx-decider-v1-27b`), which takes the same typed questions as Jev at a near-identical list price of $0.04 per million input tokens, and gpt-6-luna with the same prompt as the gpt-5.6-luna evaluator. LangSmith has no built-in for either, so their verdicts were posted onto the traces as feedback through the SDK, which is the self-hosted way to run an online evaluator. Both evaluator configurations as LangSmith saved them, every feedback item, the evaluator runs and the analysis are in the companion repository, [`adimyth/jev-online-eval`](https://github.com/adimyth/jev-online-eval).
+After the run I graded each final answer against the SimpleQA gold answer with the SimpleQA grading scheme, pulled every feedback item and every evaluator run back through the SDK, and separately sent the exact same rendered state to both judges directly, to measure call latency and repeatability without LangSmith's queue in the way. On that direct path I added two more judges for comparison: Perplexity's [Decisions API](https://docs.perplexity.ai/docs/decisions/quickstart) (`pplx-decider-v1-27b`), which takes the same typed questions as Jev at a near-identical list price of $0.04 per million input tokens, and gpt-6-luna with the same prompt as the gpt-5.6-luna evaluator. LangSmith has no built-in for either, so their verdicts were posted onto the traces as feedback through the SDK, which is the self-hosted way to run an online evaluator.
 
 ## What it cost
 
