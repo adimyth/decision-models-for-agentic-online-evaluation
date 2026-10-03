@@ -28,7 +28,7 @@ def _msg_dict(m: Any) -> dict:
     if isinstance(m, dict):
         return m
     return {"type": m.type, "content": m.content, "tool_calls": getattr(m, "tool_calls", None),
-            "name": getattr(m, "name", None)}
+            "name": getattr(m, "name", None), "tool_call_id": getattr(m, "tool_call_id", None)}
 
 
 def state_from_messages(messages: list) -> dict:
