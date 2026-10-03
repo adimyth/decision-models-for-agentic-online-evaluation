@@ -10,7 +10,15 @@ TypeSafe released [Jev](https://typesafe.ai), a decision model that answers type
 - [Arize](https://arize.com/blog/jev-as-a-judge/) reports a threshold-tuned Jev matching Claude Opus 5 at 87% on a hallucination benchmark, at about 1/300 of the cost.
 - [Langfuse](https://langfuse.com/blog/2026-09-22-running-evals-with-jev) quotes a Good Start Labs study: Jev agreed with Claude Fable 5.1 on 91.5% of 6,003 rubric checks.
 
-Each of those compares Jev with a human label or a stronger model on recorded examples. Several launch posts then argue that a judge this cheap and fast means you can stop sampling. What I could not find is the measurement behind that argument: Jev running on a live project at 100% sampling, with the lag, coverage and cost per trace that result, and gold answers to check the scores against. This essay reports that for one real agent.
+Each of those compares Jev with a human label or a stronger model on recorded examples. Several launch posts then argue that a judge this cheap and fast means you can stop sampling.
+
+What I could not find is the measurement behind that argument:
+
+- Jev running on a live project at 100% sampling.
+- The lag, coverage and cost per trace that result.
+- Gold answers to check the scores against.
+
+This essay reports that for one real agent.
 
 ## Setup
 
@@ -23,7 +31,16 @@ Four parts:
 
 ### The agent
 
-A small web-research agent built with Deep Agents on gpt-5.6-luna. It has two tools, `web_search` (DuckDuckGo via the ddgs library) and `fetch_page` (httpx plus trafilatura, pages cut to 4K tokens), and a system prompt asking for a short cited answer. I sent it 300 questions from OpenAI's SimpleQA set: short factual questions written by people, each with a verified gold answer, such as "Who won the Eddington Medal in 1972?". Every run was traced to one LangSmith project. One trace holds the question, every search and page fetch with its result, and the final answer.
+A small web-research agent built with Deep Agents on `gpt-5.6-luna`, with two tools and a system prompt asking for a short cited answer:
+
+- `web_search`: DuckDuckGo via the ddgs library.
+- `fetch_page`: httpx plus trafilatura, pages cut to 4K tokens.
+
+I sent it 300 questions from OpenAI's SimpleQA set: short factual questions written by people, each with a verified gold answer. For example:
+
+> Who won the Eddington Medal in 1972?
+
+Every run was traced to one LangSmith project. One trace holds the question, every search and page fetch with its result, and the final answer.
 
 Code and data: [adimyth/jev-online-eval](https://github.com/adimyth/jev-online-eval).
 
@@ -317,7 +334,12 @@ A reference-free judge with the same web page in front of it cannot see these. N
 
 **The three false alarms look like hesitation on numbers, not errors.** Delhi's forest cover, Pavlov's psychic secretion and Oprah's 164 acres scored 0.45 to 0.49. The LLM gave all three 0.97 or more.
 
-**The `grounded` score is not a hallucination detector.** It correlated only 0.65 with the LLM's and ran lower on average, 0.94 against 0.99. I read the six lowest Jev scores expecting unsupported claims. Five were correct answers that quoted their source, such as Pavlov at 0.57 and a Terraria patch name at 0.67. Only the lowest, a forest-cover figure at 0.18, was one both judges doubted. I would not alert on it.
+**The `grounded` score is not a hallucination detector.** It correlated only 0.65 with the LLM's and ran lower on average, 0.94 against 0.99. I read the six lowest Jev scores expecting unsupported claims:
+
+- Five were correct answers that quoted their source, such as Pavlov at 0.57 and a Terraria patch name at 0.67.
+- Only the lowest, a forest-cover figure at 0.18, was one both judges doubted.
+
+I would not alert on it.
 
 Jev cannot explain itself, so every one of these took a human reading the trace. The LLM judge's one-line comment was accurate about what it had looked at on all 17 wrong answers. On the cycle race it wrote that 3:02:25 "matches the fetched Wikipedia event table", and then scored the answer correct anyway.
 
