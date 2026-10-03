@@ -12,16 +12,50 @@ Each of those compares Jev with a human label or a stronger model on recorded ex
 
 ## Setup
 
-I built a small web-research agent with Deep Agents on gpt-5.6-luna. It has two tools, `web_search` (DuckDuckGo via the ddgs library) and `fetch_page` (httpx plus trafilatura, pages truncated to 4K tokens), and a system prompt asking for a short cited answer. I sent it 300 questions from OpenAI's SimpleQA set, which are short factual questions written by people, each with a verified gold answer, and traced everything to one LangSmith project.
+There are four parts to this: an agent that produces traces, five questions asked about every trace, four judges that answer them, and a gold answer to check the judges against.
+
+### The agent
+
+A small web-research agent built with Deep Agents on gpt-5.6-luna. It has two tools, `web_search` (DuckDuckGo via the ddgs library) and `fetch_page` (httpx plus trafilatura, pages cut to 4K tokens), and a system prompt asking for a short cited answer. I sent it 300 questions from OpenAI's SimpleQA set: short factual questions written by people, each with a verified gold answer, such as "Who won the Eddington Medal in 1972?". Every run was traced to one LangSmith project. One trace holds the question, every search and page fetch with its result, and the final answer.
 
 Code and data: [adimyth/jev-online-eval](https://github.com/adimyth/jev-online-eval).
 
-On that project I created two online evaluators, both on root runs at a sampling rate of 100%, both asking the same five questions about each trace:
+### The five questions
 
-- **jev-online** sends the questions to Jev (`jev-1.13.0`) as typed question objects. LangSmith's decision-model evaluator builds the state from the run input and output and posts one feedback key per question.
-- **llm-online** is a conventional LLM-as-judge on gpt-5.6-luna. The same five questions are written out in a prompt, the same input and output are pasted in, and the model returns a JSON object with one field per question. This is how you would have built an online evaluator before Jev.
+An online evaluator is a judge that reads each trace as it arrives and writes scores onto it. The judge does not write a review. It fills in a fixed checklist, and each item on the checklist becomes one feedback key on the trace. This experiment uses the same five-item checklist for every judge. The wording is adapted from Openlayer's jevals library.
 
-The five questions, with wording adapted from Openlayer's jevals library: did the agent answer (yes/no probability), is the answer grounded in what the tools returned (yes/no probability), is the answer factually correct, judged without a reference (yes/no probability), how definite is the answer (a four-level score), and what was the outcome (a choice among answered, could not find, partial and refused). Three of them as Jev receives them:
+<div className="wide-table">
+
+| Key | Question | Answer type | What comes back |
+|---|---|---|---|
+| `answered` | Did the agent give a direct answer, rather than decline or say it could not find one? | yes/no | a probability, 0 to 1 |
+| `grounded` | Does the answer use what the tools returned, without adding facts they do not contain? | yes/no | a probability, 0 to 1 |
+| `correct` | Is the answer factually correct? Judged from the tool results and general knowledge, with no reference answer | yes/no | a probability, 0 to 1 |
+| `confidence` | How definite is the answer? | score, 4 levels | 0 (no answer) to 3 (definite, with a source) |
+| `outcome` | What happened overall? | choice | one of `answered`, `could_not_find`, `partial`, `refused` |
+
+</div>
+
+The `correct` question is the one that matters most and the hardest to answer, because an online judge never sees the gold answer. Production traffic has no answer key. The judge has to decide from the trace alone, which is exactly the situation you are in when you monitor a live agent.
+
+### The four judges
+
+Two kinds of model answered the checklist. Decision models take the five questions as structured input and return five structured answers. Chat models only take text, so for them the same five questions are written out in a prompt, the trace is pasted underneath, and the model is told to reply as a JSON object with one field per question. The prompt route is how LLM-as-judge evaluators have always been built; it is the baseline.
+
+<div className="wide-table">
+
+| Judge | Kind | How it receives the questions | Where it ran |
+|---|---|---|---|
+| Jev `jev-1.13.0` | decision model | as typed question objects | LangSmith online evaluator, 100% sampling |
+| gpt-5.6-luna | chat model | as text in a prompt, JSON reply | LangSmith online evaluator, 100% sampling |
+| Perplexity Decisions `pplx-decider-v1-27b` | decision model | the same question objects as Jev | direct API calls, verdicts posted to the traces |
+| gpt-6-luna | chat model | the same prompt as gpt-5.6-luna | direct API calls, verdicts posted to the traces |
+
+</div>
+
+The first two are LangSmith's own online evaluators, created in its UI on the tracing project, and they fire automatically on every new trace. That is the setup this essay is testing. The other two were added for comparison. LangSmith has no built-in for them, so a script sent each trace to them and posted the answers back as feedback, which is the self-hosted way to run an online evaluator.
+
+This is what three of the five questions look like as Jev receives them. The `state` is the trace; `{{input}}` and `{{output}}` are LangSmith variables holding the run's input and output.
 
 ```json
 {
@@ -56,7 +90,29 @@ The five questions, with wording adapted from Openlayer's jevals library: did th
 }
 ```
 
-After the run I graded each final answer against the SimpleQA gold answer with the SimpleQA grading scheme, pulled every feedback item and every evaluator run back through the SDK, and separately sent the exact same rendered state to both judges directly, to measure call latency and repeatability without LangSmith's queue in the way. On that direct path I added two more judges for comparison: Perplexity's [Decisions API](https://docs.perplexity.ai/docs/decisions/quickstart) (`pplx-decider-v1-27b`), which takes the same typed questions as Jev at a near-identical list price of $0.04 per million input tokens, and gpt-6-luna with the same prompt as the gpt-5.6-luna evaluator. LangSmith has no built-in for either, so their verdicts were posted onto the traces as feedback through the SDK, which is the self-hosted way to run an online evaluator.
+For the chat models, the same three questions appear in the prompt as prose. The relevant part reads:
+
+```text
+Answer these questions about the run.
+- llm_correct: probability 0 to 1 that the final answer is factually correct
+  as an answer to the question, judged from the tool results and general
+  knowledge. If no answer was given, this is 0.
+- llm_confidence: how definite the final message is. 0 = no answer or explicit
+  inability to answer. 1 = hedged ... 3 = definite, states the answer plainly
+  with a source.
+- llm_outcome: one of answered, could_not_find, partial, refused.
+
+<input> ... </input>
+<output> ... </output>
+```
+
+and a JSON schema forces the reply into `{"llm_correct": 0.93, "llm_confidence": 3, "llm_outcome": "answered", ...}`.
+
+### The reference and the measurements
+
+After the run I graded every final answer against its SimpleQA gold answer using the SimpleQA grading scheme, so each trace is labelled right, wrong or not attempted. That label is what the judges' `correct` scores are checked against.
+
+From the two LangSmith evaluators I measured cost per trace, the lag between a run finishing and its scores appearing, and whether every trace got scored. To measure each judge's own speed without LangSmith's queue in the way, I also sent the exact rendered state of every trace to all four judges directly, and sent 20 of them six times each to check repeatability.
 
 ## What it cost
 
