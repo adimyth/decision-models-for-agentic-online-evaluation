@@ -30,8 +30,12 @@ def collect(client: Client, rows: list[dict]) -> list[dict]:
     for i in range(0, len(run_ids), 50):
         for run in client.list_runs(id=run_ids[i:i + 50], select=["id", "end_time", "start_time", "total_tokens"]):
             runs[str(run.id)] = run
-    for i in range(0, len(run_ids), 50):
-        for fb in client.list_feedback(run_ids=run_ids[i:i + 50]):
+    seen = set()
+    for rid in run_ids:  # one call per run: batched listing paginates unstably and drops/duplicates items
+        for fb in client.list_feedback(run_ids=[rid]):
+            if str(fb.id) in seen:
+                continue
+            seen.add(str(fb.id))
             run = runs.get(str(fb.run_id))
             end = run.end_time if run else None
             if end is not None and end.tzinfo is None:

@@ -39,7 +39,7 @@ def main():
     runs = [r for r in load("runs", args.tag) if r.get("ok")]
     fb = load("feedback", args.tag)
     gold = {g["run_id"]: g for g in load("gold", args.tag)}
-    evruns = {e["run_id"]: e for e in load("evaluator_runs", args.tag)}
+    evruns = {e["evaluator_run_id"]: e for e in load("evaluator_runs", args.tag)}
     direct = load("direct", args.tag)
     m = {"n_runs": len(runs)}
 
@@ -56,6 +56,8 @@ def main():
     table = defaultdict(dict)
     lag = defaultdict(list)
     for f in fb:
+        if f["score"] is None and f["value"] is None:
+            continue  # evaluator ran but produced no answer (counts as not scored)
         table[f["run_id"]][f["key"]] = f
         if f["lag_s"] is not None and f["key"] != "comment":
             lag[f["key"].split("_")[0]].append(f["lag_s"])
@@ -66,6 +68,9 @@ def main():
         full = sum(1 for r in runs if all(f"{judge}_{q}" in table[r["run_id"]] for q in QS))
         anyk = sum(1 for r in runs if any(f"{judge}_{q}" in table[r["run_id"]] for q in QS))
         cov[judge] = {"all_keys": full, "any_key": anyk, "share_all_keys": full / len(runs)}
+    unscored = [f for f in fb if f["score"] is None and f["value"] is None and f["key"] != "comment"]
+    cov["unscored_feedback_items"] = len(unscored)
+    cov["unscored_runs"] = sorted({f["run_id"] for f in unscored})
     m["coverage"] = cov
 
     # ---- lag (run end -> feedback created)
@@ -150,6 +155,7 @@ def main():
             agree[q] = {"n": len(pairs), "within_0.5": sum(1 for d in diffs if d <= 0.5) / len(pairs),
                         "mean_abs_diff": float(np.mean(diffs))}
         else:
+            pairs = [(a, b) for a, b in pairs if a["score"] is not None and b["score"] is not None]
             xs = np.array([a["score"] for a, b in pairs], float); ysv = np.array([b["score"] for a, b in pairs], float)
             agree[q] = {"n": len(pairs), "binary_agreement_at_0.5": float(np.mean((xs >= .5) == (ysv >= .5))),
                         "pearson": float(np.corrcoef(xs, ysv)[0, 1]) if xs.std() > 0 and ysv.std() > 0 else None,

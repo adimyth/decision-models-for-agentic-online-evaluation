@@ -1,0 +1,41 @@
+[plan] fetching 287 runs from LangSmith
+[ledger] direct Jev calls: projected jev spend $0.1413; spent so far $0.0012; cap $5.00 (stop at 80%)
+[ledger] direct LLM judge calls: projected openai spend $0.7480; spent so far $1.1527; cap $10.00 (stop at 80%)
+[plan] avg state 8425 tokens; 387 calls per judge; wall clock about 19 min
+[1/287] jev 0.42s llm 2.81s tokens 4792 jev_in=6093 llm_in=5347
+[11/287] jev 0.39s llm 4.62s tokens 7941 jev_in=9449 llm_in=8496
+[21/287] jev 0.36s llm 3.12s tokens 4154 jev_in=5289 llm_in=4708
+[31/287] jev 0.44s llm 1.86s tokens 10850 jev_in=12594 llm_in=11404
+[41/287] jev 0.37s llm 1.91s tokens 6342 jev_in=7795 llm_in=6897
+[51/287] jev 0.34s llm 2.18s tokens 3086 jev_in=4264 llm_in=3641
+[61/287] jev 0.40s llm 1.99s tokens 5394 jev_in=6890 llm_in=5948
+[71/287] jev 0.72s llm 2.37s tokens 4614 jev_in=5960 llm_in=5169
+[81/287] jev 0.44s llm 2.88s tokens 10194 jev_in=12240 llm_in=10748
+[91/287] jev 0.38s llm 2.40s tokens 5654 jev_in=7011 llm_in=6209
+[101/287] jev 0.37s llm 2.16s tokens 5954 jev_in=7293 llm_in=6509
+[111/287] jev 0.48s llm 2.88s tokens 16076 jev_in=18170 llm_in=16630
+[121/287] jev 0.35s llm 1.65s tokens 3625 jev_in=4728 llm_in=4179
+[131/287] jev 0.39s llm 1.89s tokens 7361 jev_in=8859 llm_in=7916
+[141/287] jev 0.36s llm 2.31s tokens 3063 jev_in=4261 llm_in=3618
+[151/287] jev 0.40s llm 2.09s tokens 7060 jev_in=8577 llm_in=7615
+[161/287] jev 0.42s llm 1.80s tokens 9336 jev_in=11083 llm_in=9890
+[171/287] jev 0.39s llm 1.45s tokens 7486 jev_in=9319 llm_in=8041
+[181/287] jev 0.41s llm 1.61s tokens 8873 jev_in=10529 llm_in=9427
+[191/287] jev 0.42s llm 1.89s tokens 8759 jev_in=10413 llm_in=9313
+[201/287] jev 0.36s llm 1.82s tokens 4327 jev_in=5591 llm_in=4881
+[211/287] jev 0.39s llm 1.77s tokens 4596 jev_in=5861 llm_in=5151
+[221/287] jev 0.37s llm 1.92s tokens 5699 jev_in=7040 llm_in=6254
+[231/287] jev 0.48s llm 2.20s tokens 17254 jev_in=19603 llm_in=17808
+[241/287] jev 0.40s llm 2.71s tokens 8677 jev_in=10431 llm_in=9231
+[251/287] jev 0.36s llm 2.42s tokens 5044 jev_in=6325 llm_in=5598
+[261/287] jev 0.42s llm 2.71s tokens 6345 jev_in=7671 llm_in=6899
+[271/287] jev 0.50s llm 2.31s tokens 16058 jev_in=18571 llm_in=16612
+[281/287] jev 0.39s llm 1.81s tokens 5703 jev_in=7297 llm_in=6257
+[287/287] jev 0.47s llm 3.49s tokens 18082 jev_in=20880 llm_in=18636
+[repeat 1/5] done
+[repeat 2/5] done
+[repeat 3/5] done
+[repeat 4/5] done
+[repeat 5/5] done
+[done] 17.4 min; jev $0.1662 openai $1.8857
+exit 0

@@ -1,0 +1,341 @@
+{
+  "n_runs": 287,
+  "agent": {
+    "cost_total_usd": 1.0826276000000001,
+    "cost_per_run_usd": 0.0037722216027874563,
+    "latency_p50_s": 18.83,
+    "latency_p95_s": 52.330999999999975,
+    "tool_calls_mean": 3.9965156794425085
+  },
+  "coverage": {
+    "jev": {
+      "all_keys": 286,
+      "any_key": 286,
+      "share_all_keys": 0.9965156794425087
+    },
+    "llm": {
+      "all_keys": 287,
+      "any_key": 287,
+      "share_all_keys": 1.0
+    },
+    "unscored_feedback_items": 5,
+    "unscored_runs": [
+      "a2406e51-320b-4421-8560-0b059d960ab9"
+    ]
+  },
+  "lag_s": {
+    "llm": {
+      "p50": 80.010562,
+      "p90": 105.810597,
+      "p95": 108.467484,
+      "max": 124.836204,
+      "n": 1435
+    },
+    "jev": {
+      "p50": 68.74748600000001,
+      "p90": 94.601434,
+      "p95": 98.237127,
+      "max": 108.300842,
+      "n": 1430
+    }
+  },
+  "evaluator_runs": {
+    "jev": {
+      "n": 287,
+      "latency_p50_s": 0.720909,
+      "latency_p95_s": 1.3285548999999999,
+      "prompt_tokens_mean": 6359.365853658536,
+      "completion_tokens_mean": 0.0,
+      "cost_mean_usd": 0.00027843336585365853
+    },
+    "llm": {
+      "n": 287,
+      "latency_p50_s": 3.712018,
+      "latency_p95_s": 5.3212691,
+      "prompt_tokens_mean": 8984.341463414634,
+      "completion_tokens_mean": 94.90940766550523,
+      "cost_mean_usd": 0.0019107595818815331
+    }
+  },
+  "gold": {
+    "CORRECT": 268,
+    "INCORRECT": 17,
+    "NOT_ATTEMPTED": 2
+  },
+  "accuracy_vs_gold": {
+    "jev": {
+      "correct_auroc_correct_vs_incorrect": 0.8272747301167659,
+      "n_correct_vs_incorrect": 284,
+      "correct_confusion_at_0.5": {
+        "tp": 264,
+        "fp": 15,
+        "fn": 3,
+        "tn": 2
+      },
+      "correct_accuracy_at_0.5": 0.9366197183098591,
+      "flag_rate_of_wrong_answers_at_0.5": 0.11764705882352941,
+      "false_alarm_rate_at_0.5": 0.011235955056179775,
+      "correct_auroc_all": 0.8450620934358367,
+      "answered_auroc_vs_not_attempted": 1.0,
+      "n_not_attempted": 2
+    },
+    "llm": {
+      "correct_auroc_correct_vs_incorrect": 0.7176251097453907,
+      "n_correct_vs_incorrect": 285,
+      "correct_confusion_at_0.5": {
+        "tp": 268,
+        "fp": 17,
+        "fn": 0,
+        "tn": 0
+      },
+      "correct_accuracy_at_0.5": 0.9403508771929825,
+      "flag_rate_of_wrong_answers_at_0.5": 0.0,
+      "false_alarm_rate_at_0.5": 0.0,
+      "correct_auroc_all": 0.7473487824037707,
+      "answered_auroc_vs_not_attempted": 1.0,
+      "n_not_attempted": 2
+    }
+  },
+  "agreement": {
+    "answered": {
+      "n": 286,
+      "binary_agreement_at_0.5": 1.0,
+      "pearson": 0.9807542703742465,
+      "jev_mean": 0.9754895104895105,
+      "llm_mean": 0.9926223776223776
+    },
+    "grounded": {
+      "n": 286,
+      "binary_agreement_at_0.5": 1.0,
+      "pearson": 0.6542609592768382,
+      "jev_mean": 0.9443356643356645,
+      "llm_mean": 0.993076923076923
+    },
+    "correct": {
+      "n": 286,
+      "binary_agreement_at_0.5": 0.9825174825174825,
+      "pearson": 0.46111185012824285,
+      "jev_mean": 0.852062937062937,
+      "llm_mean": 0.9873426573426574
+    },
+    "confidence": {
+      "n": 286,
+      "within_0.5": 0.986013986013986,
+      "mean_abs_diff": 0.01608391608391607
+    },
+    "outcome": {
+      "n": 286,
+      "exact_agreement": 1.0
+    }
+  },
+  "direct": {
+    "jev": {
+      "n": 286,
+      "latency_p50_s": 0.4168580829864368,
+      "latency_p95_s": 0.7466507502249442,
+      "latency_mean_s": 0.46103525784361615,
+      "cost_mean_usd": 0.00042775053658536595,
+      "failures": 1,
+      "repeat_correct_std_mean": 0.007656502055650093,
+      "repeat_flip_rate": 0.0,
+      "repeat_n_states": 20
+    },
+    "llm": {
+      "n": 287,
+      "latency_p50_s": 2.090696457773447,
+      "latency_p95_s": 3.4149943374562994,
+      "latency_mean_s": 2.2794779869679114,
+      "cost_mean_usd": 0.001905722648083624,
+      "failures": 0,
+      "repeat_correct_std_mean": 0.0031409214735888605,
+      "repeat_flip_rate": 0.0,
+      "repeat_n_states": 20
+    }
+  },
+  "jev_misses": [
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 3784,
+      "q": "What was the first Nike running shoe?",
+      "gold": "The Nike Cortez",
+      "answer": "Nike\u2019s first running shoe was the **Nike Moon Shoe**, designed by Bill Bowerman in 1971 and worn by athletes at the 1972 Olympic Marathon Trials. It was never widely released; the **Waffle Trainer** l",
+      "jev_correct": 0.8,
+      "llm_correct": 0.98,
+      "run_id": "5b09371d-50f0-41ee-b216-5e44fff05a57"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 2994,
+      "q": "How many feet deep is the Mississippi River at its source, Lake Itasca?",
+      "gold": "3 feet",
+      "answer": "The Mississippi River is about **1.5 feet deep** (18 inches) at its headwaters at Lake Itasca.\n\nSource: https://www.dnr.state.mn.us/headwaters/index.html",
+      "jev_correct": 0.65,
+      "llm_correct": 1.0,
+      "run_id": "c9bba72b-dc27-4422-b74b-3b6ad545fd59"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 3071,
+      "q": "What is the total number of passengers that died when KLM Flight 4805 and Pan Am Flight 1736 collided?",
+      "gold": "583",
+      "answer": "A total of **560 passengers** died: 234 on KLM Flight 4805 and 326 on Pan Am Flight 1736. Including crew, the collision killed **583 people** in total.\n\nSource: https://www.spsairbuz.com/story/?id=81",
+      "jev_correct": 0.91,
+      "llm_correct": 1.0,
+      "run_id": "d4d5a374-f133-4e69-a6bb-8aa31c4382e7"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 821,
+      "q": "What is the full name of the Indian politician who is quoted comparing Kashmir's Martyrs' Day with the Jallianwala Bagh Massacre?",
+      "gold": "Sheikh Mohammad Abdullah",
+      "answer": "The politician is **Omar Abdullah**, whose full name is **Omar Abdullah**. He described Kashmir\u2019s 13 July massacre as \u201cour Jallianwala Bagh.\u201d  \n\nSource: https://www.livemint.com/politics/news/explaine",
+      "jev_correct": 0.69,
+      "llm_correct": 1.0,
+      "run_id": "a7147b61-1803-4416-971a-a11fe8df67a6"
+    },
+    {
+      "type": "jev_said_wrong_but_correct",
+      "qid": 2135,
+      "q": "What is the forest cover area of Delhi in square kilometers according to the India State of Forest Report 2019?",
+      "gold": "195.44",
+      "answer": "According to the **India State of Forest Report 2019**, Delhi had **195.44 square kilometers** of forest cover.\n\nSources:  \n- https://www.fsi.nic.in/isfr19/vol2/isfr-2019-vol-ii-delhi.pdf  \n- https://",
+      "jev_correct": 0.49,
+      "llm_correct": 0.99,
+      "run_id": "7652397c-cab1-4b3a-b16c-953e3eaf4844"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 2255,
+      "q": "What day, month, and year did version 1.06 of the original PS3 release of Dark Souls get released in North America?",
+      "gold": "October 22 2012",
+      "answer": "Version 1.06 was released in North America on **23 October 2012** for the original PS3 version of *Dark Souls*.  \n\nSources:  \n- https://www.dualshockers.com/console-version-of-dark-souls-gets-1-06-pat",
+      "jev_correct": 0.6,
+      "llm_correct": 0.92,
+      "run_id": "9c430740-f9d4-407f-bf2a-6bd9337961e8"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 3353,
+      "q": "Who founded the municipality of Tuta, Boyac\u00e1, Colombia?",
+      "gold": "Miguel S\u00e1nchez and Juan Rodr\u00edguez Parra",
+      "answer": "Tuta was founded in 1776 by **Agust\u00edn de Alvarado y Castillo, Archbishop of Santaf\u00e9 de Bogot\u00e1**, who issued the decree establishing it as a parish.  \n\nSources:  \n- https://es.wikipedia.org/wiki/Tuta  ",
+      "jev_correct": 0.64,
+      "llm_correct": 0.93,
+      "run_id": "08039c2c-cf3d-4344-98b7-62a5b21484ae"
+    },
+    {
+      "type": "jev_said_wrong_but_correct",
+      "qid": 2888,
+      "q": "Who gave the concept of psychic secretion?",
+      "gold": "Ivan Pavlov",
+      "answer": "The concept of **psychic secretion** was given by **Ivan Pavlov**, based on his observations of anticipatory salivation in dogs.\n\nSource: https://www.columbia.edu/cu/psychology/terrace/ppt07/tsld002.h",
+      "jev_correct": 0.46,
+      "llm_correct": 0.93,
+      "run_id": "4162ceef-16c4-4d71-b1bb-525a17faa72c"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 2259,
+      "q": "In what year did conductor David Randolph receive his master's degree from Columbia University?",
+      "gold": "1942",
+      "answer": "David Randolph received his master\u2019s degree from Teachers College, Columbia University, in **1941**.  \nSource: https://www.bach-cantatas.com/Bio/Randolph-David.htm",
+      "jev_correct": 0.51,
+      "llm_correct": 0.7,
+      "run_id": "d84140c5-4111-416c-bf50-50fb0e1c71f4"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 3383,
+      "q": "Who won the Eddington Medal in 1972?",
+      "gold": "Paul Ledoux",
+      "answer": "Pierre Ledoux won the Eddington Medal in 1972.\n\nSource: https://en.wikipedia.org/wiki/Eddington_Medal",
+      "jev_correct": 0.89,
+      "llm_correct": 1.0,
+      "run_id": "e8f6a826-f0ad-42d8-93f5-edb1424c4327"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 2678,
+      "q": "What year was the municipality of Titirib\u00ed, Antioquia, Colombia, founded?",
+      "gold": "1775",
+      "answer": "Titirib\u00ed was established as a municipality in **1815**. (The original settlement is sometimes dated to 1775, but the present municipality\u2019s foundation is generally given as 1815.)\n\nSources:  \n- https:",
+      "jev_correct": 0.7,
+      "llm_correct": 0.88,
+      "run_id": "091a2717-e58b-45f7-94e8-aad7a76f7fb3"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 3753,
+      "q": "In which year was the first person awarded the \"Pillar of Peace\" Award?",
+      "gold": "2020",
+      "answer": "The first \u201cPillar of Peace\u201d Award was presented in **2019**, to Otumfuo Osei Tutu II during the inaugural Africa Premier Leadership Awards ceremony on December 29, 2019.\n\nSource: https://dailyguidenet",
+      "jev_correct": 0.86,
+      "llm_correct": 1.0,
+      "run_id": "23a48581-9e15-4b67-9d75-12bc6b8da102"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 1124,
+      "q": "Which month and year was ex-president of Ghana, J.J. Rawlings enstooled as Togbuiga Nutifafa I of Anlo?",
+      "gold": "December 2018",
+      "answer": "J.J. Rawlings was enstooled as **Togbuiga Nutifafa I of Anlo in October 2016**.\n\nSource: https://www.ghanastar.com/stories/rawlings-enstooled-peace-chief-of-anlo-state/",
+      "jev_correct": 0.84,
+      "llm_correct": 1.0,
+      "run_id": "74a4a97c-6705-4bb1-90e0-9069d8c6d8cc"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 2275,
+      "q": "Who planted the first Chinar tree in Kashmir?",
+      "gold": "Syed Qasim Shah Hamdani.",
+      "answer": "The first Chinar tree in Kashmir is **traditionally attributed to Mughal emperor Akbar**, who is said to have planted Chinars there after conquering Kashmir in 1586. However, historical accounts indic",
+      "jev_correct": 0.61,
+      "llm_correct": 0.94,
+      "run_id": "f68cf153-07ba-47cd-b952-adcccd6fbec2"
+    },
+    {
+      "type": "jev_said_wrong_but_correct",
+      "qid": 524,
+      "q": "How many acres of land did Oprah Winfrey purchase in Rolling Prairie, Indiana, as her weekend refuge in 1998?",
+      "gold": "164",
+      "answer": "Oprah Winfrey purchased **164 acres** in Rolling Prairie, Indiana, as her weekend refuge.  \n\nSource: https://people.com/celebrity/oprah-unloads-indiana-farm-hideaway/",
+      "jev_correct": 0.45,
+      "llm_correct": 0.97,
+      "run_id": "681f102a-760b-478d-870d-b5af154c238d"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 1371,
+      "q": "What time (hours, minutes, and seconds) did Lawrence Whittaker finish in when he won the first Cape Town Cycle Tour, formerly known as the Cape Argus Cycle Tour, in September 1978?",
+      "gold": "3:02:24",
+      "answer": "Lawrence Whittaker finished in **3 hours, 2 minutes, and 25 seconds (03:02:25)** in the 1978 Cape Town Cycle Tour.\n\nSources:  \n- https://en.wikipedia.org/wiki/Cape_Town_Cycle_Tour  \n- https://www.cycl",
+      "jev_correct": 0.84,
+      "llm_correct": 1.0,
+      "run_id": "05e5d080-8956-4a7b-912f-4f32f3a7c525"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 1280,
+      "q": "Name the bowed instrument played in Kashmir?",
+      "gold": "Saz-e-Kashmir",
+      "answer": "The bowed instrument played in Kashmir is the **Kashmiri sarang (sarangi)**.  \n\nSource: https://www.ikashmir.net/musicofkashmir/3.html",
+      "jev_correct": 0.83,
+      "llm_correct": 1.0,
+      "run_id": "a6c081e6-a98d-432a-89a4-3305e17534d1"
+    },
+    {
+      "type": "jev_said_correct_but_wrong",
+      "qid": 3810,
+      "q": "What is the full name of the first person to be awarded a Ph.D. in Mathematics from the Universidad Nacional Aut\u00f3noma de M\u00e9xico?",
+      "gold": "Roberto V\u00e1zquez Garc\u00eda",
+      "answer": "The first person was **Alfonso Antonio de Jes\u00fas N\u00e1poles G\u00e1ndara**. He received the mathematics doctorate from UNAM in 1940.\n\nSources:  \n- https://paginas.matem.unam.mx/matematicos/matematicos-i-p/mate",
+      "jev_correct": 0.83,
+      "llm_correct": 0.99,
+      "run_id": "e624bb15-0230-4a31-8347-32159c06ebeb"
+    }
+  ],
+  "spend_ledger": {
+    "openai": 1.8857063999999981,
+    "jev": 0.1661677919999998
+  }
+}
