@@ -66,7 +66,6 @@ After the run I graded each final answer against the SimpleQA gold answer with t
 |---|---|---|---|---|---|
 | Per trace, measured | $0.0038 | $0.00043 | $0.00095 | $0.0019 | $0.0019 |
 | Per 1K traces | $3.77 | $0.43 | $0.95 | $1.91 | $1.89 |
-| At 10K traces a day | $38 | $4.30 | $9.50 | $19 | $19 |
 | Billed input tokens per trace | | 7.5K | 9K | 9K | 47K |
 
 </div>
