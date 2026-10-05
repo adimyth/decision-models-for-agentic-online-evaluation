@@ -207,30 +207,26 @@ The decision models answer in under a second and the LLMs in about two, but on t
 
 First the ground truth, which the judges never see. Of the 287 answers the research agent produced, the SimpleQA grader found 268 right, 17 wrong and 2 not attempted. Those 17 wrong answers are the test: a useful judge should score them lower than the 268 right ones. Seventeen is a thin basis, so treat what follows as indicative.
 
-(Chart: average correct score, right vs wrong, per judge. See metrics.json.)
+(Chart: average correct score given to the 17 wrong answers, per judge. See metrics.json.)
 
-Every judge scores right answers high. The difference is what happens on the wrong ones: Jev's open dot sits at 0.67, gpt-5.6-luna's at 0.96.
-
-
-
-The same information as one number per judge: the distance between its two dots.
+Every judge scored the right answers near 1.0, so the whole difference is in how they scored the wrong ones. gpt-5.6-luna gave wrong answers 0.96: it was fooled almost every time. Jev gave them 0.67: still above 0.5, but a clear step down from the 0.87 it gave right answers.
 
 
 
-AUROC ignores the absolute scores and asks only whether the judge orders right above wrong. Perplexity leads here because its scores are very consistent, so even its smaller drop sorts cleanly.
+AUROC asks a different question: if you pick one right and one wrong answer at random, how often does the judge score the right one higher? Perplexity leads because its scores are very consistent, so even a small step down sorts cleanly.
 
 | Caught at a 0.5 threshold | Jev | Perplexity Decisions | gpt-6-luna | gpt-5.6-luna |
 |---|---|---|---|---|
 | Wrong answers caught | 2 of 17 | 1 of 17 | 1 of 17 | 0 of 17 |
 | Right answers wrongly flagged | 3 of 267 | 0 of 268 | 0 of 268 | 0 of 268 |
 
-Read the three charts in three lines.
+Read the two charts in three lines.
 
 1. **All four judges agree on the yes or no verdict 98% of the time**, and none catches more than two of the 17 wrong answers. A reference-free judge cannot see that a faithfully quoted web page disagrees with the gold answer.
-2. **They differ in how much the score moves when the agent is wrong.** Jev drops by 0.20 on average, Perplexity by 0.11, gpt-6-luna by 0.09, gpt-5.6-luna by 0.03.
+2. **They differ in how much the score drops when the agent is wrong.** Jev by 0.20, Perplexity by 0.11, gpt-6-luna by 0.09, gpt-5.6-luna by 0.03.
 3. **That movement is what makes a score usable on a drift chart.** If the agent started getting more answers wrong, Jev's daily average would visibly fall, Perplexity's would dip, and gpt-5.6-luna's would barely move.
 
-It is the only quality difference between these judges that matters for online monitoring.
+So, can you trust them? On a single trace, no judge here can be trusted to say whether an answer is correct; alerting on one score would miss nearly every real error. Over a day of traces, the decision models can be trusted to show the agent getting worse, and the LLM judges cannot. On the structural questions, did it answer and what was the outcome, all four agreed on every trace and matched the gold "not attempted" label exactly, so those can be trusted per trace.
 
 Repeatability did not separate them. Twenty states sent six times each produced no flipped verdicts from any judge; Perplexity returned identical probabilities every time, the LLMs moved by 0.003, Jev by 0.008.
 
