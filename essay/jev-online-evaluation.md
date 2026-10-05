@@ -222,7 +222,13 @@ The cost that dominates at scale is a different one: the traces. LangSmith bills
 
 ## How fast the scores arrived
 
-![Lag and latency](img/latency.png)
+![Lag](img/latency.png)
+
+Dots mark the median. p95 is 98 s for Jev and 108 s for gpt-5.6-luna. The judge itself accounts for 0.4 s and 2 s of that; the rest is the evaluator queue.
+
+
+
+Dots mark the median. p95 is 0.75 s for Jev, 1.24 s for Perplexity, 3.5 s for gpt-6-luna and 3.4 s for gpt-5.6-luna. The two LLMs overlap.
 
 The two charts show two different things.
 
@@ -238,16 +244,24 @@ So:
 
 First the ground truth, which the judges never see. Of the 287 answers the research agent produced, the SimpleQA grader found 268 right, 17 wrong and 2 not attempted. Those 17 wrong answers are the test: a useful judge should score them lower than the 268 right ones. Seventeen is a thin basis, so treat what follows as indicative.
 
-(Score gap chart: see metrics.json, accuracy_vs_gold and extra_judges.)
+(Chart: average correct score, right vs wrong, per judge. See metrics.json.)
 
-Each pair of dots is one judge's average `correct` score on the 268 answers the agent got right and on the 17 it got wrong. The gap between them is how much the judge's score moves when the agent fails. AUROC is the chance the judge scores a random right answer above a random wrong one.
+Every judge scores right answers high. The difference is what happens on the wrong ones: Jev's open dot sits at 0.67, gpt-5.6-luna's at 0.96.
+
+
+
+The same information as one number per judge: the distance between its two dots.
+
+
+
+AUROC ignores the absolute scores and asks only whether the judge orders right above wrong. Perplexity leads here because its scores are very consistent, so even its smaller drop sorts cleanly.
 
 | Caught at a 0.5 threshold | Jev | Perplexity Decisions | gpt-6-luna | gpt-5.6-luna |
 |---|---|---|---|---|
 | Wrong answers caught | 2 of 17 | 1 of 17 | 1 of 17 | 0 of 17 |
 | Right answers wrongly flagged | 3 of 267 | 0 of 268 | 0 of 268 | 0 of 268 |
 
-Read the chart in three lines.
+Read the three charts in three lines.
 
 1. **All four judges agree on the yes or no verdict 98% of the time**, and none catches more than two of the 17 wrong answers. A reference-free judge cannot see that a faithfully quoted web page disagrees with the gold answer.
 2. **They differ in how much the score moves when the agent is wrong.** Jev drops by 0.20 on average, Perplexity by 0.11, gpt-6-luna by 0.09, gpt-5.6-luna by 0.03.
