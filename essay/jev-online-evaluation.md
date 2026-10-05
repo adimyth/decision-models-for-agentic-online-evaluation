@@ -1,8 +1,8 @@
-# Jev for online evaluation
+# Decision models for agentic online evaluation
 
 Online evaluation means a judge scores your production traces as they arrive, and the scores sit on the traces for dashboards and alerts.
 
-Almost nobody runs it on every trace. [LangSmith's guide](https://docs.langchain.com/langsmith/online-evaluations) suggests applying the evaluator to 10% of traces to control costs, and [Langfuse](https://langfuse.com/blog/2026-09-23-catching-conversation-signals-in-langfuse) describes the same habit: with LLM-as-a-judge at scale, costs "were primarily contained through sampling". I did the same on my own agents, sampled a few percent, and then stopped looking at those too.
+Almost nobody runs it on every trace. [LangSmith's guide](https://docs.langchain.com/langsmith/online-evaluations) suggests applying the evaluator to 10% of traces to control costs, and [Langfuse](https://langfuse.com/blog/2026-09-23-catching-conversation-signals-in-langfuse) describes the same habit: with LLM-as-a-judge at scale, costs "were primarily contained through sampling". I did the same on my own agents: sampled a few percent, and over time stopped checking even those.
 
 TypeSafe released [Jev](https://typesafe.ai), a decision model that answers typed questions about a piece of context and returns probabilities instead of prose, at $0.042 per million input tokens. Three of the launch-week posts measured it as a judge:
 
@@ -16,7 +16,7 @@ What I could not find is the measurement behind that argument:
 
 - Jev running on a live project at 100% sampling.
 - The lag, coverage and cost per trace that result.
-- Gold answers to check the scores against.
+- Whether the decisions it makes can be trusted, checked against known answers.
 
 This essay reports that for one real agent.
 
@@ -79,14 +79,14 @@ The prompt route is how LLM-as-judge evaluators have always been built. It is th
 |---|---|---|---|
 | Jev `jev-1.13.0` | decision model | as typed question objects | LangSmith online evaluator, 100% sampling |
 | gpt-5.6-luna | chat model | as text in a prompt, JSON reply | LangSmith online evaluator, 100% sampling |
-| Perplexity Decisions `pplx-decider-v1-27b` | decision model | the same question objects as Jev | direct API calls, verdicts posted to the traces |
-| gpt-6-luna | chat model | the same prompt as gpt-5.6-luna | direct API calls, verdicts posted to the traces |
+| Perplexity Decisions `pplx-decider-v1-27b` | decision model | the same question objects as Jev | offline, on the same traces after the run |
+| gpt-6-luna | chat model | the same prompt as gpt-5.6-luna | offline, on the same traces after the run |
 
 </div>
 
 The first two are LangSmith's own online evaluators. They fire automatically on every new trace, and they are the setup this essay is testing.
 
-The other two were added for comparison. LangSmith has no built-in for them, so a script sent each trace to them and posted the answers back as feedback. That is the self-hosted way to run an online evaluator.
+The other two were added for comparison and ran offline: after the run, a script sent each recorded trace to them and posted the answers back onto the trace as feedback. Their cost and accuracy numbers are comparable with the online pair; their lag is not, so they have none. Two more decision models are on the list for when I have access: OpenAI's Decisions API, which I am waiting on, and Cloudflare's [Clef](https://blog.cloudflare.com/clef-decision-models/), which speaks the same question format as Jev.
 
 This is what three of the five questions look like as Jev receives them. The `state` is the trace; `{{input}}` and `{{output}}` are LangSmith variables holding the run's input and output.
 
@@ -145,7 +145,7 @@ and a JSON schema forces the reply into `{"llm_correct": 0.93, "llm_confidence":
 
 After the run I graded every final answer against its SimpleQA gold answer using the SimpleQA grading scheme. Each trace is labelled `CORRECT`, `INCORRECT` or `NOT_ATTEMPTED`, and that label is what the judges' `correct` scores are checked against.
 
-This is what one scored trace looks like with both LangSmith evaluators' feedback keys on it. The agent's answer is wrong against gold, and both judges called it correct:
+This is what one scored trace looks like, with all four judges' feedback keys on it. The agent's answer is wrong against gold, and every judge called it correct:
 
 ```json
 {
@@ -163,10 +163,22 @@ This is what one scored trace looks like with both LangSmith evaluators' feedbac
     "llm_correct": 1.0,
     "llm_confidence": 3.0,
     "llm_outcome": "answered",
-    "comment": "The assistant directly identified Pierre Ledoux, exactly matching the fetched source's 1972 Eddington Medal entry, and provided the source link."
+    "comment": "The assistant directly identified Pierre Ledoux, exactly matching the fetched source's 1972 Eddington Medal entry, and provided the source link.",
+    "pplx_answered": 0.99,
+    "pplx_grounded": 0.96,
+    "pplx_correct": 0.91,
+    "pplx_confidence": 2.97,
+    "pplx_outcome": "answered",
+    "luna6_answered": 1.0,
+    "luna6_grounded": 1.0,
+    "luna6_correct": 1.0,
+    "luna6_confidence": 3,
+    "luna6_outcome": "answered"
   }
 }
 ```
+
+Reading the keys: `answered` 0.99 means the judge is 99% sure the agent gave a direct answer, which it did. `outcome` is `answered` because the agent committed to a name rather than hedging or refusing. `correct` is the only key that could have caught the error, and all four judges put it at 0.89 or above, because the fetched Wikipedia page itself says Pierre Ledoux. The gold answer says Paul Ledoux. The `comment` is the gpt-5.6-luna judge's reasoning, which decision models do not produce.
 
 ## What it cost
 
@@ -183,6 +195,8 @@ This is what one scored trace looks like with both LangSmith evaluators' feedbac
 Each figure uses the input tokens the vendor itself billed for the same rendered state, which carries fetched web pages.
 
 ![Judge cost per evaluated trace](img/cost.png)
+
+The agent run itself cost $3.77 per 1K traces, so even the dearest judge adds half the cost of the run it scores. Perplexity's bar is the odd one: nearly the same list price as Jev, five times the billed tokens.
 
 ### Why Perplexity costs what gpt-5.6-luna does
 
@@ -204,7 +218,7 @@ Jev is about 4.5× cheaper than gpt-5.6-luna and twice as cheap as gpt-6-luna co
 
 The cost that dominates at scale is a different one: the traces. LangSmith bills traces in two tiers. A base trace is kept for 14 days. An extended trace is kept for a year or more and costs twice as much; at the time of writing the published rates are $2.50 and $5 per 1K traces, with the first 5K base traces a month free on the Developer plan ([pricing](https://www.langchain.com/pricing-langsmith)). Feedback itself is free. The catch is that any online evaluator run moves its trace from base to extended, so scoring every trace adds about $2.50 per 1K traces to the bill, six times the Jev cost, and it is the same whichever judge you pick.
 
-> Budget for the traces before the judge.
+> Before choosing a judge, price what your platform charges to keep the traces it scores. On LangSmith that charge is several times the judge's cost at any sampling rate.
 
 ## How fast the scores arrived
 
@@ -224,20 +238,16 @@ So:
 
 Against gold, the agent got 268 answers right, 17 wrong and 2 not attempted. Seventeen negatives is a thin basis, so treat the accuracy numbers as indicative.
 
-<div className="wide-table">
+(Score gap chart: see metrics.json, accuracy_vs_gold and extra_judges.)
 
-| Reference-free `correct` | Jev | Perplexity Decisions | gpt-6-luna | gpt-5.6-luna |
+Each pair of dots is one judge's average `correct` score on the 268 answers the agent got right and on the 17 it got wrong. The gap between them is how much the judge's score moves when the agent fails. AUROC is the chance the judge scores a random right answer above a random wrong one.
+
+| Caught at a 0.5 threshold | Jev | Perplexity Decisions | gpt-6-luna | gpt-5.6-luna |
 |---|---|---|---|---|
-| Mean score when the agent was right | 0.87 | 0.97 | 1.00 | 0.99 |
-| Mean score when the agent was wrong | 0.67 | 0.86 | 0.91 | 0.96 |
-| Gap between the two | 0.20 | 0.11 | 0.09 | 0.03 |
-| AUROC, right vs wrong | 0.83 | 0.90 | 0.74 | 0.72 |
-| Wrong answers caught at p < 0.5 | 2 of 17 | 1 of 17 | 1 of 17 | 0 of 17 |
-| Right answers wrongly flagged at p < 0.5 | 3 of 267 | 0 of 268 | 0 of 268 | 0 of 268 |
+| Wrong answers caught | 2 of 17 | 1 of 17 | 1 of 17 | 0 of 17 |
+| Right answers wrongly flagged | 3 of 267 | 0 of 268 | 0 of 268 | 0 of 268 |
 
-</div>
-
-Read it in three lines.
+Read the chart in three lines.
 
 1. **All four judges agree on the yes or no verdict 98% of the time**, and none catches more than two of the 17 wrong answers. A reference-free judge cannot see that a faithfully quoted web page disagrees with the gold answer.
 2. **They differ in how much the score moves when the agent is wrong.** Jev drops by 0.20 on average, Perplexity by 0.11, gpt-6-luna by 0.09, gpt-5.6-luna by 0.03.
@@ -306,14 +316,3 @@ On what the scores are worth:
 - No judge catches an individual wrong answer, because most wrong answers here were faithful summaries of a web page that disagreed with the reference.
 
 > Use a decision model online for aggregate quality tracking and for structural questions like "did the agent answer". Keep a reference-based check for per-answer correctness.
-
-This experiment says nothing about whether Jev can judge multi-step agent behaviour such as wrong tool choices or policy violations. That needs an agent with known-correct trajectories, and it is the next test to run.
-
-## Method notes
-
-- 300 SimpleQA questions, fixed random subset, 6 concurrent agent runs, 21.7 minutes of wall clock.
-- Agent and LLM judge on `gpt-5.6-luna` at $0.20 in and $1.20 out per million tokens; `gpt-6-luna` at $0.10 and $0.50. Both through the Responses API.
-- Jev pinned to `jev-1.13.0`. Perplexity `pplx-decider-v1-27b` at $0.04 per million input tokens.
-- Jev and gpt-5.6-luna ran as LangSmith online evaluators. Perplexity and gpt-6-luna ran on the direct path only, with their verdicts posted to the traces afterwards.
-- Spend as billed by the providers: about $2.80 on OpenAI for the agent, grading, the LangSmith-run gpt-5.6-luna evaluations and the direct-call passes; $0.28 on Jev, of which $0.12 was the LangSmith evaluator and $0.16 the direct calls; $0.73 on Perplexity.
-- Gold grading used the SimpleQA grader prompt with gpt-5.6-luna, so a few of the 17 "wrong" answers may be grader or gold errors. I did not adjudicate them by hand.
