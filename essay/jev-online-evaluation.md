@@ -236,7 +236,7 @@ So:
 
 ## Do the scores mean anything
 
-Against gold, the agent got 268 answers right, 17 wrong and 2 not attempted. Seventeen negatives is a thin basis, so treat the accuracy numbers as indicative.
+First the ground truth, which the judges never see. Of the 287 answers the research agent produced, the SimpleQA grader found 268 right, 17 wrong and 2 not attempted. Those 17 wrong answers are the test: a useful judge should score them lower than the 268 right ones. Seventeen is a thin basis, so treat what follows as indicative.
 
 (Score gap chart: see metrics.json, accuracy_vs_gold and extra_judges.)
 
