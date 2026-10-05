@@ -197,7 +197,7 @@ First the ground truth, which the judges never see. Of the 287 answers the resea
 
 (Chart: average correct score given to the 17 wrong answers, per judge. See metrics.json.)
 
-Every judge scored the right answers near 1.0, so the whole difference is in how they scored the wrong ones. gpt-5.6-luna gave wrong answers 0.96: it was fooled almost every time. Jev gave them 0.67: still above 0.5, but a clear step down from the 0.87 it gave right answers.
+All four judges scored the 268 right answers near 1.0 on average (Jev 0.87, Perplexity 0.97, gpt-6-luna 1.00, gpt-5.6-luna 0.99), so the whole difference between them is in how they scored the 17 wrong ones. gpt-5.6-luna gave wrong answers 0.96: it was fooled almost every time. Jev gave them 0.67: still above 0.5, but a clear step down from the 0.87 it gave right answers.
 
 
 
