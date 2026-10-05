@@ -171,19 +171,7 @@ Each figure uses the input tokens the vendor itself billed for the same rendered
 
 The agent run itself cost $3.77 per 1K traces, so even the dearest judge adds half the cost of the run it scores. Perplexity's bar is the odd one: nearly the same list price as Jev, five times the billed tokens.
 
-### Why Perplexity costs what gpt-5.6-luna does
-
-Jev and Perplexity list almost the same price per million tokens, yet Perplexity costs 4.4× more per trace. Perplexity's documentation does not say how input tokens are counted, so I measured it: one 15K-character state, sent with one, two and five questions to both.
-
-| Questions in the request | Jev billed | Perplexity billed |
-|---|---|---|
-| 1 | 5.8K | 5.6K |
-| 2 | 5.9K | 11.1K |
-| 5 | 6.2K | 27.6K |
-
-Jev reads the state once; Perplexity bills it again for every question. With one question they cost the same; with five, Perplexity costs what gpt-5.6-luna does.
-
-> Compare judges on cost per trace at your question count, never on list price.
+Perplexity lists almost the same price per token as Jev but costs 4.4× more per trace because it bills the state once per question: the same state sent with one, two and five questions billed 5.6K, 11.1K and 27.6K tokens, where Jev billed 5.8K, 5.9K and 6.2K. Compare judges on cost per trace at your question count, never on list price.
 
 ### The judge was not the expensive part
 
