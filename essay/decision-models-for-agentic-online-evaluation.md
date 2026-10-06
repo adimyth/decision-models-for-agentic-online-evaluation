@@ -1,12 +1,20 @@
 # Decision models for agentic online evaluation
 
-**TL;DR**
+> A decision model makes it cheap and fast to score every trace an agent produces. Whether you can trust the score depends on the question you ask it.
 
-- I ran TypeSafe's Jev and gpt-5.6-luna as LangSmith online evaluators on every trace of a live research agent, 300 runs at 100% sampling, and checked their verdicts against known answers. Perplexity's Decisions API and gpt-6-luna were run offline on the same traces.
-- Cost per trace: Jev $0.43 per 1K traces, gpt-6-luna $0.95, gpt-5.6-luna $1.91, Perplexity $1.89. Perplexity bills the state once per question, so its near-identical list price ends up 4.4× Jev's.
-- The judge was not the expensive part. LangSmith's trace retention upgrade costs several times any judge, and its evaluator queue puts every score about a minute behind the run, whichever judge you use.
-- No judge, decision model or LLM, catches an individual wrong answer without a reference. Decision models do lower their score when the agent is wrong, so their daily average is a usable drift signal; the LLM judges say 0.98 to everything.
+## TL;DR
 
+I ran TypeSafe's Jev and gpt-5.6-luna as LangSmith online evaluators on every trace of a live web-research agent, 300 runs at 100% sampling, and checked their verdicts against known answers. Perplexity's Decisions API and gpt-6-luna scored the same traces offline.
+
+Scoring every trace is cheap with any of them, from $0.43 per 1K traces for Jev to $1.91 for gpt-5.6-luna. Perplexity lists nearly Jev's price but bills the trace once per question, so at five questions it costs 4.4× more. The bigger bills sit elsewhere: LangSmith's retention upgrade on every scored trace costs several times any judge, and its evaluator queue lands each score about a minute after the run, whichever judge you pick.
+
+**No judge, decision model or LLM, can tell you a single answer is wrong when it has no reference to compare against.** Most of the agent's wrong answers faithfully quoted a web page that was itself wrong.
+
+What the decision models can do is notice failure on average. Their score drops when the agent is wrong, so a daily average tracks the agent getting worse. The LLM judges score nearly everything 0.98 and stay flat.
+
+Code and data: [adimyth/decision-models-for-agentic-online-evaluation](https://github.com/adimyth/decision-models-for-agentic-online-evaluation).
+
+## Why everyone samples
 Online evaluation means a judge scores your production traces as they arrive, and the scores sit on the traces for dashboards and alerts.
 
 Almost nobody runs it on every trace. [LangSmith's guide](https://docs.langchain.com/langsmith/online-evaluations) suggests applying the evaluator to 10% of traces to control costs, and [Langfuse](https://langfuse.com/blog/2026-09-23-catching-conversation-signals-in-langfuse) says the same: with LLM-as-a-judge at scale, costs "were primarily contained through sampling". I did the same on my own agents: sampled a few percent, and over time stopped checking even those.
@@ -42,7 +50,6 @@ I sent it 300 questions from OpenAI's SimpleQA set: short factual questions writ
 
 Every run was traced to one LangSmith project. One trace holds the question, every search and page fetch with its result, and the final answer.
 
-Code and data: [adimyth/decision-models-for-agentic-online-evaluation](https://github.com/adimyth/decision-models-for-agentic-online-evaluation).
 
 ### The five questions
 
