@@ -6,7 +6,7 @@
 
 I ran TypeSafe's Jev and gpt-5.6-luna as LangSmith online evaluators on every trace of a live web-research agent, 300 runs at 100% sampling, and checked their verdicts against known answers. Perplexity's Decisions API and gpt-6-luna scored the same traces offline.
 
-Scoring every trace is cheap with any of them, from $0.42 per 1K traces for Jev to $1.91 for gpt-5.6-luna. Perplexity lists nearly Jev's price but bills the trace once per question, so at five questions it costs 4.5× more. The bigger bills sit elsewhere: LangSmith's retention upgrade on every scored trace costs several times any judge, and its evaluator queue lands each score about a minute after the run, whichever judge you pick.
+Scoring every trace is cheap with any of them, from $0.42 per 1K traces for Jev to $1.91 for gpt-5.6-luna. Perplexity lists nearly Jev's price but bills the trace once per question, so at five questions it costs 4.5× more. The bigger bills sit elsewhere: LangSmith's retention upgrade on every scored trace costs more than any of the judges, and its evaluator queue lands each score about a minute after the run, whichever judge you pick.
 
 **No judge, decision model or LLM, can tell you a single answer is wrong when it has no reference to compare against.** Most of the agent's wrong answers faithfully quoted a web page that was itself wrong.
 
@@ -186,9 +186,9 @@ Perplexity lists almost the same price per token as Jev but costs 4.5× more per
 
 Jev is about 4.5× cheaper than gpt-5.6-luna and about half the price of gpt-6-luna. Against a cheap modern LLM, the judge was already affordable. The cost that dominates at scale is keeping the traces.
 
-LangSmith bills traces in two tiers: a base trace is kept for 14 days, an extended trace for 180 days at twice the price. At the time of writing the published rates are $2.50 and $5 per 1K traces, with the first 5K base traces a month free on the Developer plan ([pricing](https://www.langchain.com/pricing-langsmith)). Feedback itself is free. The catch is that any online evaluator run moves its trace from base to extended, so scoring every trace adds about $2.50 per 1K traces, six times the Jev cost, whichever judge you pick.
+LangSmith charges for keeping traces. On the Developer plan the first 5K base traces a month are free, each one after that costs $5 per 1K, and a base trace is kept for 14 days. Upgrading a trace to extended retention, 180 days, adds $2.50 per 1K ([pricing](https://www.langchain.com/pricing)). Feedback itself is free. The catch is that any online evaluator run moves its trace from base to extended, so scoring every trace adds $2.50 per 1K traces, six times the Jev cost and more than any judge here, whichever judge you pick.
 
-> Before choosing a judge, price what your platform charges to keep the traces it scores. On LangSmith that charge is several times the cost of the judge.
+> Before choosing a judge, price what your platform charges to keep the traces it scores. On LangSmith that charge is more than the judge itself.
 
 ## How fast the scores arrived
 
@@ -259,7 +259,7 @@ If you have been sampling a few percent of traces because the judge was too expe
 
 Three things to check before you switch it on:
 
-1. **The platform bill, not the judge bill.** On LangSmith, every evaluated trace moves to extended retention, which adds about $2.50 per 1K traces, six times the Jev cost. Price the traces first.
+1. **The platform bill, not the judge bill.** On LangSmith, every evaluated trace moves to extended retention, which adds $2.50 per 1K traces, six times the Jev cost. Price the traces first.
 2. **What you will do with a score that arrives a minute late.** Both online evaluators landed on the trace 70 to 110 seconds after the run ended, almost all of it LangSmith's queue. Fine for dashboards and daily alerts. Not fine for blocking or routing a live response; that needs a call from inside the agent, where Jev's 0.4 seconds does matter.
 3. **Which traces it will skip.** Of my 300 runs, 13 failed on the agent's recursion limit and the evaluators never saw them, because they only fire on successful runs. One more was a 12-tool-call trace whose state passed Jev's 32K-token limit, and Jev's evaluator failed on it while the other three judges scored it. Decide what should happen to those before you trust the coverage number.
 
