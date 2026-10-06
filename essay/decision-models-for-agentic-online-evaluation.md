@@ -25,15 +25,7 @@ TypeSafe released [Jev](https://typesafe.ai), a decision model that answers type
 - [Arize](https://arize.com/blog/jev-as-a-judge/) reports a threshold-tuned Jev matching Claude Opus 5 at 87% on a hallucination benchmark, at about 1/300 of the cost.
 - [Langfuse](https://langfuse.com/blog/2026-09-22-running-evals-with-jev) quotes a Good Start Labs study: Jev agreed with Claude Fable 5.1 on 91.5% of 6,003 rubric checks.
 
-Each of those compares Jev with a human label or a stronger model on recorded examples. Several launch posts then argue that a judge this cheap and fast means you can stop sampling.
-
-What I could not find is the measurement behind that argument:
-
-- Jev running on a live project at 100% sampling.
-- The lag, coverage and cost per trace that result.
-- Whether the decisions it makes can be trusted, checked against known answers.
-
-This essay reports that for one real agent.
+Each of those measures Jev on recorded examples. I wanted to see how it holds up in practice: as an online evaluator on a real agent, scoring every trace as it arrives. That meant measuring what each trace costs, how long the score takes to land, and whether the verdicts can be trusted, with known answers to check them against.
 
 ## Setup
 
