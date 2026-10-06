@@ -168,7 +168,10 @@ def main():
         dd = {}
         for judge in ("jev", "llm"):
             lat = [d[judge]["latency_s"] for d in d0 if d[judge].get("latency_s") is not None and d[judge].get("answers")]
-            cost = [d[judge]["cost_usd"] for d in d0]
+            if judge == "jev":  # recompute from billed usage; early runs added the fixed overhead twice
+                cost = [ledger.cost_jev(d["jev"]["usage"].get("input_tokens") or 0, billed=True) for d in d0 if d["jev"].get("answers")]
+            else:
+                cost = [d[judge]["cost_usd"] for d in d0]
             dd[judge] = {"n": len(lat), "latency_p50_s": pct(lat, 50), "latency_p95_s": pct(lat, 95),
                          "latency_mean_s": float(np.mean(lat)) if lat else None, "cost_mean_usd": float(np.mean(cost)),
                          "failures": sum(1 for d in d0 if not d[judge].get("answers"))}

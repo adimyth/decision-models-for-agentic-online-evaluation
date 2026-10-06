@@ -15,8 +15,8 @@ The question: if a judge is cheap and fast enough, can you score **every** produ
 
 | | Jev | Perplexity Decisions | gpt-6-luna | gpt-5.6-luna |
 |---|---|---|---|---|
-| Cost per 1K traces, five questions | $0.43 | $1.89 | $0.95 | $1.91 |
-| Billed input tokens per trace | 7.5K | 47K | 9K | 9K |
+| Cost per 1K traces, five questions | $0.42 | $1.89 | $0.95 | $1.91 |
+| Billed input tokens per trace | 10K | 47K | 9K | 9K |
 | Direct call latency, p50 | 0.42 s | 0.67 s | 2.2 s | 2.09 s |
 | Run end to score on trace, p50 (LangSmith online evaluator) | 69 s | – | – | 80 s |
 | Traces scored, of 287 | 286 | 287 | 287 | 287 |
@@ -26,7 +26,7 @@ The question: if a judge is cheap and fast enough, can you score **every** produ
 
 Three things worth knowing:
 
-- **Perplexity bills the state once per question.** One state with 1, 2 and 5 questions billed 5.6K, 11.1K and 27.6K tokens; Jev billed 5.8K, 5.9K and 6.2K. Near-identical list prices, 4.4× different cost per trace at five questions.
+- **Perplexity bills the state once per question.** One state with 1, 2 and 5 questions billed 5.6K, 11.1K and 27.6K tokens; Jev billed 5.8K, 5.9K and 6.2K. Near-identical list prices, 4.5× different cost per trace at five questions.
 - **The LangSmith queue, not the judge, sets the lag.** Both online evaluators landed 70 to 110 s after the run ended; the judges themselves take 0.4 s and 2 s.
 - **No judge catches individual wrong answers** (most are faithful quotes of a web page that disagrees with gold), but the decision models' scores drop when the agent is wrong and the LLMs' barely move, so only the decision models give a usable drift signal.
 

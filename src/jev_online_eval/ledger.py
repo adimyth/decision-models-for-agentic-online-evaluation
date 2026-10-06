@@ -58,5 +58,7 @@ def cost_pplx(input_tokens: int) -> float:
     return input_tokens * PRICES["pplx-decider-v1-27b"][0] / 1e6
 
 
-def cost_jev(input_tokens: int) -> float:
-    return (input_tokens + JEV_OVERHEAD_TOKENS) * PRICES["jev-1.13.0"][0] / 1e6
+def cost_jev(input_tokens: int, billed: bool = False) -> float:
+    """billed=True when input_tokens is Jev's own usage figure, which already includes the fixed overhead."""
+    extra = 0 if billed else JEV_OVERHEAD_TOKENS
+    return (input_tokens + extra) * PRICES["jev-1.13.0"][0] / 1e6

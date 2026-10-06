@@ -97,7 +97,7 @@ def main():
         def one(r, jev_state, llm_prompt, tok, rep):
             j = jev_client.ask(jev_state, jev_q)
             jtok = j["usage"].get("input_tokens") or tok
-            jcost = ledger.cost_jev(jtok) if j["answers"] else 0.0
+            jcost = ledger.cost_jev(jtok, billed=True) if j["answers"] else 0.0
             ledger.add("jev", jcost)
             l = ask_llm(llm_prompt)
             lcost = ledger.cost_openai(JUDGE_MODEL, l["usage"]["input_tokens"], l["usage"]["output_tokens"])

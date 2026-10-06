@@ -134,7 +134,7 @@
       "latency_p50_s": 0.4168580829864368,
       "latency_p95_s": 0.7466507502249442,
       "latency_mean_s": 0.46103525784361615,
-      "cost_mean_usd": 0.00042775053658536595,
+      "cost_mean_usd": 0.0004179061678321678,
       "failures": 1,
       "repeat_correct_std_mean": 0.007656502055650093,
       "repeat_flip_rate": 0.0,
