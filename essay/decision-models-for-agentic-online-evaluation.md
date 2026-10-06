@@ -1,5 +1,12 @@
 # Decision models for agentic online evaluation
 
+**TL;DR**
+
+- I ran TypeSafe's Jev and gpt-5.6-luna as LangSmith online evaluators on every trace of a live research agent, 300 runs at 100% sampling, and checked their verdicts against known answers. Perplexity's Decisions API and gpt-6-luna were run offline on the same traces.
+- Cost per trace: Jev $0.43 per 1K traces, gpt-6-luna $0.95, gpt-5.6-luna $1.91, Perplexity $1.89. Perplexity bills the state once per question, so its near-identical list price ends up 4.4× Jev's.
+- The judge was not the expensive part. LangSmith's trace retention upgrade costs several times any judge, and its evaluator queue puts every score about a minute behind the run, whichever judge you use.
+- No judge, decision model or LLM, catches an individual wrong answer without a reference. Decision models do lower their score when the agent is wrong, so their daily average is a usable drift signal; the LLM judges say 0.98 to everything.
+
 Online evaluation means a judge scores your production traces as they arrive, and the scores sit on the traces for dashboards and alerts.
 
 Almost nobody runs it on every trace. [LangSmith's guide](https://docs.langchain.com/langsmith/online-evaluations) suggests applying the evaluator to 10% of traces to control costs, and [Langfuse](https://langfuse.com/blog/2026-09-23-catching-conversation-signals-in-langfuse) says the same: with LLM-as-a-judge at scale, costs "were primarily contained through sampling". I did the same on my own agents: sampled a few percent, and over time stopped checking even those.
