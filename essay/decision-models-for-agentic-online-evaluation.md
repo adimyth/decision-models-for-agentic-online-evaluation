@@ -10,7 +10,7 @@ Scoring every trace is cheap with any of them, from $0.43 per 1K traces for Jev 
 
 **No judge, decision model or LLM, can tell you a single answer is wrong when it has no reference to compare against.** Most of the agent's wrong answers faithfully quoted a web page that was itself wrong.
 
-What the decision models can do is notice failure on average. Their score drops when the agent is wrong, so a daily average tracks the agent getting worse. The LLM judges score nearly everything 0.98 and stay flat.
+So use them for trends, not verdicts. When the agent was wrong, the decision models scored it lower, just rarely low enough to flag. Across a day of traffic those small drops add up, so a falling average shows the agent getting worse. The LLM judges score nearly everything as correct, so their average barely moves.
 
 Code and data: [adimyth/decision-models-for-agentic-online-evaluation](https://github.com/adimyth/decision-models-for-agentic-online-evaluation).
 
