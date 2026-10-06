@@ -81,7 +81,10 @@ The prompt route is how LLM-as-judge evaluators have always been built. It is th
 
 </div>
 
-The first two are LangSmith's own online evaluators and fire on every new trace; they are the setup under test. The other two ran offline for comparison: a script sent each recorded trace to them afterwards and posted the answers back as feedback, so they have cost and accuracy numbers but no lag. OpenAI's Decisions API, which I am waiting on, and Cloudflare's [Clef](https://blog.cloudflare.com/clef-decision-models/) are next.
+The first two ran live as LangSmith online evaluators; the other two scored the same traces offline afterwards, so they have cost and accuracy numbers but no lag.
+
+> [!NOTE]
+> **Coming next:** OpenAI's Decisions API, which I am waiting on, and Cloudflare's [Clef](https://blog.cloudflare.com/clef-decision-models/).
 
 This is what three of the five questions look like as Jev receives them. The `state` is the trace; `{{input}}` and `{{output}}` are LangSmith variables holding the run's input and output.
 
