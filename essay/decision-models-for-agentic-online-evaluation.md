@@ -35,7 +35,7 @@ I sent it 300 questions from OpenAI's SimpleQA set: short factual questions writ
 
 Every run was traced to one LangSmith project. One trace holds the question, every search and page fetch with its result, and the final answer.
 
-Code and data: [adimyth/jev-online-eval](https://github.com/adimyth/jev-online-eval).
+Code and data: [adimyth/decision-models-for-agentic-online-evaluation](https://github.com/adimyth/decision-models-for-agentic-online-evaluation).
 
 ### The five questions
 
