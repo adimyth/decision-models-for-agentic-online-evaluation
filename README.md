@@ -30,7 +30,7 @@ Three things worth knowing:
 
 - **Perplexity bills the state once per question.** One state with 1, 2 and 5 questions billed 5.6K, 11.1K and 27.6K tokens; Jev billed 5.8K, 5.9K and 6.2K; OpenAI Decisions 5.1K, 5.3K and 5.8K. Near-identical list prices, 4.5× different cost per trace at five questions.
 - **The LangSmith queue, not the judge, sets the lag.** Both online evaluators landed 70 to 110 s after the run ended; the judges themselves take 0.4 s and 2 s.
-- **No judge catches individual wrong answers** (most are faithful quotes of a web page that disagrees with gold), but the decision models' scores drop when the agent is wrong and the LLMs' barely move, so only the decision models give a usable drift signal.
+- **No judge reliably catches individual wrong answers without a reference.** At the default 0.5 cutoff the best caught 2 of 17. Of the 17 wrong answers, 11 repeat a fact from the agent's own tool results that disagrees with gold, and 3 state something no tool returned (for example "Pierre" Ledoux from a page that said "P. Ledoux"); no judge's `grounded` score flagged those 3. The decision models' scores do drop when the agent is wrong and the LLMs' barely move, so only the decision models give a usable drift signal.
 
 Spend as billed by the providers: about $2.80 on OpenAI, $0.28 on Jev, $0.73 on Perplexity.
 

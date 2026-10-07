@@ -8,9 +8,9 @@ I ran TypeSafe's Jev and gpt-5.6-luna as LangSmith online evaluators on every tr
 
 Scoring every trace is cheap with any of them: $0.42 per 1K traces for Jev, $0.94 for OpenAI's Decisions API, up to $1.91 for gpt-5.6-luna. Perplexity lists nearly Jev's price but bills the trace once per question, so at five questions it costs 4.5× more. The bigger bills sit elsewhere: LangSmith's retention upgrade on every scored trace costs more than any of the judges, and its evaluator queue lands each score about a minute after the run, whichever judge you pick.
 
-**No judge, decision model or LLM, can tell you a single answer is wrong when it has no reference to compare against.** Most of the agent's wrong answers faithfully quoted a web page that was itself wrong.
+**No judge, decision model or LLM, can reliably tell you a single answer is wrong when it has no reference to compare against.** Most of the agent's wrong answers repeated what a web page said, and the page disagreed with the gold answer.
 
-So use them for trends, not verdicts. When the agent was wrong, the decision models scored it lower, just rarely low enough to flag. Across a day of traffic those small drops add up, so a falling average shows the agent getting worse. The LLM judges score nearly everything as correct, so their average barely moves.
+So use them for trends, not verdicts. When the agent was wrong, the decision models scored it lower, just rarely below the usual 0.5 cutoff. Across a day of traffic those small drops add up, so a falling average shows the agent getting worse. The LLM judges score nearly everything as correct, so their average barely moves.
 
 Code and data: [adimyth/decision-models-for-agentic-online-evaluation](https://github.com/adimyth/decision-models-for-agentic-online-evaluation).
 
@@ -89,7 +89,7 @@ This is what three of the five questions look like as Jev receives them. The `st
 ```json
 {
   "model": "jev-1.13.0",
-  "state": "<input>{{input}}</input>\n<output>{{output}}</output>",
+  "state": "<input>\n{{input}}\n</input>\n\n<output>\n{{output}}\n</output>",
   "questions": {
     "jev_correct": {
       "type": "noul",
@@ -134,7 +134,7 @@ For the chat models the same questions are written out as prose in the prompt, a
 
 ### The reference and the measurements
 
-After the run I graded every final answer against its SimpleQA gold answer using the SimpleQA grading scheme. Each trace is labelled `CORRECT`, `INCORRECT` or `NOT_ATTEMPTED`, and that label is what the judges' `correct` scores are checked against.
+After the run I graded every final answer against its SimpleQA gold answer with SimpleQA's own grading prompt, run on gpt-5.6-luna with the gold answer in front of it. Each trace is labelled `CORRECT`, `INCORRECT` or `NOT_ATTEMPTED`, and that label is what the judges' `correct` scores are checked against. An LLM grader can slip too, so a few of the labels may be wrong.
 
 This is what one scored trace looks like, with all five judges' feedback keys on it. The agent's answer is wrong against gold, and every judge called it correct:
 
@@ -174,7 +174,7 @@ This is what one scored trace looks like, with all five judges' feedback keys on
 }
 ```
 
-`answered` 0.99 and `outcome` `answered` say the agent committed to a name, which it did. `correct` is the only key that could have caught the error, and all five judges put it at 0.89 or above, because the fetched Wikipedia page itself says Pierre Ledoux. The `comment` is the gpt-5.6-luna judge's reasoning; decision models produce none.
+`answered` 0.99 and `outcome` `answered` say the agent committed to a name, which it did. The error is the first name: the fetched Wikipedia page only said "P. Ledoux", and the agent filled in "Pierre" on its own. Both `grounded` and `correct` could have caught that, and every judge scored both 0.89 or above. The `comment` is the gpt-5.6-luna judge's reasoning, which decision models do not produce, and it says the name matches the page, which it does not.
 
 ## What it cost
 
@@ -196,7 +196,7 @@ Perplexity lists almost the same price per token as Jev but costs 4.5× more per
 
 ### The judge was not the expensive part
 
-Jev is about 4.5× cheaper than gpt-5.6-luna and about half the price of gpt-6-luna. Against a cheap modern LLM, the judge was already affordable. The cost that dominates at scale is keeping the traces.
+Jev is about 4.5× cheaper than gpt-5.6-luna and less than half the price of gpt-6-luna. Against a cheap modern LLM, the judge was already affordable. The cost that dominates at scale is keeping the traces.
 
 LangSmith charges for keeping traces. On the Developer plan the first 5K base traces a month are free, each one after that costs $5 per 1K, and a base trace is kept for 14 days. Upgrading a trace to extended retention, 180 days, adds $2.50 per 1K ([pricing](https://www.langchain.com/pricing)). Feedback itself is free. The catch is that any online evaluator run moves its trace from base to extended, so scoring every trace adds $2.50 per 1K traces, six times the Jev cost and more than any judge here, whichever judge you pick.
 
@@ -206,13 +206,13 @@ LangSmith charges for keeping traces. On the Developer plan the first 5K base tr
 
 ![Lag](img/latency.png)
 
-Dots mark the median. p95 is 98 s for Jev and 108 s for gpt-5.6-luna. The judge itself accounts for 0.4 s and 2 s of that; the rest is the evaluator queue.
+Dots mark the median. p95 is 98 s for Jev and 108 s for gpt-5.6-luna. Inside LangSmith the evaluator's own run took a median 0.7 s for Jev and 3.7 s for gpt-5.6-luna; the rest is the evaluator queue.
 
 
 
 Dots mark the median. p95 is 0.75 s for Jev, 0.99 s for OpenAI Decisions, 1.24 s for Perplexity, 3.5 s for gpt-6-luna and 3.4 s for gpt-5.6-luna. The two LLMs overlap.
 
-The decision models answer in under a second and the LLMs in about two, but on the trace both scores land a minute or more after the run, because both wait in LangSmith's scheduling queue. If you need scores within seconds, the queue is your bottleneck and Jev does not fix it. If a couple of minutes is fine, for dashboards and alerts, both work.
+The decision models answer in under a second and the LLMs in about two, but on the trace both scores land about a minute after the run, sometimes two, because both wait in LangSmith's scheduling queue. If you need scores within seconds, the queue is your bottleneck and Jev does not fix it. If a couple of minutes is fine, for dashboards and alerts, both work.
 
 ## Do the scores mean anything
 
@@ -230,6 +230,8 @@ Every judge called nearly all of them correct. The two LLM judges and OpenAI's D
 
 This is where a judge has to earn its place, and none does it per answer. gpt-5.6-luna scored every wrong answer 0.7 or higher and averaged 0.96: it was fooled every time. The decision models scored wrong answers lower, Jev most of all at 0.71, but almost every dot still sits on the "correct" side. Jev pushed two wrong answers below 0.5, and Perplexity, OpenAI's Decisions API and gpt-6-luna one each.
 
+0.5 is only the default cutoff. [Arize](https://arize.com/blog/jev-as-a-judge/) found that tuning it matters more than the choice of model, and it moves the picture here too: raising Jev's cutoff to 0.7 catches 9 of the 17 wrong answers, and also flags 13 of the 267 right ones. With only 17 wrong answers to tune on, treat that as a direction, not a setting.
+
 ### Ranking right above wrong
 
 
@@ -238,30 +240,31 @@ AUROC ignores the threshold and asks only whether right answers outscore wrong o
 
 Read the charts in three lines.
 
-1. **All five judges give the same yes or no verdict on 276 of 286 traces**, and none catches more than two of the 17 wrong answers. A reference-free judge cannot see that a faithfully quoted web page disagrees with the gold answer.
+1. **All five judges give the same yes or no verdict on 276 of 286 traces**, and at the default 0.5 cutoff none catches more than two of the 17 wrong answers. A reference-free judge cannot see that a faithfully quoted web page disagrees with the gold answer.
 2. **They differ in how much the average drops when the agent is wrong.** Jev by 0.15, OpenAI's Decisions API by 0.13, Perplexity by 0.11, gpt-6-luna by 0.09, gpt-5.6-luna by 0.04.
 3. **That drop is what makes a score usable on a drift chart.** If the agent started getting more answers wrong, the decision models' daily average would visibly fall, and gpt-5.6-luna's would barely move.
 
-So, can you trust them? On a single trace, no judge here can be trusted to say whether the agent's answer is correct; alerting on one score would miss nearly every real error. Over a day of traces, the decision models can be trusted to show the agent getting worse, and the LLM judges cannot. On the structural questions the judges can be trusted per trace: every judge's `answered` score matched the gold "not attempted" label on all 286 traces, and all five picked the same outcome on 285 of them.
+So, can you trust them? On a single trace, no judge here gives a verdict you can act on alone: at 0.5 it misses nearly every wrong answer, and a cutoff tuned to catch half of them also flags about one right answer in twenty. That makes a decision model's score a way to pick which traces a person should read, not a verdict. Over a day of traces, the decision models can be trusted to show the agent getting worse, and the LLM judges cannot. On the structural questions the judges can be trusted per trace: every judge's `answered` score matched the gold "not attempted" label on all 286 traces, and all five picked the same outcome on 285 of them.
 
-Repeatability did not separate them. Twenty states sent six times each produced no flipped verdicts from any judge; Perplexity and OpenAI's Decisions API returned identical probabilities every time, the LLMs moved by 0.003, Jev by 0.008.
+Repeatability did not separate them. Twenty states sent six times each produced no flipped verdicts from any judge; Perplexity and OpenAI's Decisions API returned identical probabilities every time, gpt-6-luna and gpt-5.6-luna moved by 0.002 and 0.003, and Jev by 0.008.
 
 ## Where Jev was wrong
 
 Fifteen wrong answers got a Jev `correct` probability above 0.5, and three correct answers got one below.
 
-**Most of the fifteen faithfully repeat a source that disagrees with the gold answer.**
+**Most repeat a source that disagrees with the gold answer.** Of all 17 wrong answers, 11 state a fact that appears in what the agent's own tools returned:
 
 - 1941 instead of 1942 for a Columbia master's degree.
-- 3:02:25 instead of 3:02:24 for a cycle race.
-- "Pierre Ledoux" instead of "Paul Ledoux" for the 1972 Eddington Medal.
-- 560 passengers instead of 583 at Tenerife, because the agent excluded crew.
+- 3:02:25 instead of 3:02:24 for a cycle race, straight from a Wikipedia results table.
+- 560 passengers instead of 583 at Tenerife, adding up per-flight figures from a page and leaving out crew.
 
-A reference-free judge with the same web page in front of it cannot see these. None of the five did. Only a judge with the gold answer could.
+A reference-free judge with the same page in front of it cannot see these. Perplexity caught the first; on the other two every judge said correct.
 
-Jev cannot explain itself, so every one of these took a human reading the trace. The LLM judge's comment was accurate about the evidence on all 17: on the cycle race it wrote that 3:02:25 "matches the fetched Wikipedia event table", and then scored the answer correct anyway.
+**Three state something I could not find in any tool result.** The clearest is the Eddington Medal: the page said "P. Ledoux", the agent answered "Pierre Ledoux", and the gold answer is Paul. Catching that is the `grounded` question's job, and no judge scored any of the three below 0.5; Jev came closest, at 0.63.
 
-> The explanation was right about the evidence and told me nothing about the verdict.
+Jev cannot explain itself, so every one of these took a human reading the trace. The gpt-5.6-luna judge's one-line comment pointed to supporting evidence on all 17, including on the Eddington Medal, where it said the name matched the fetched page "exactly". It did not.
+
+> An explanation is not proof that the judge checked.
 
 ## What to take away
 
@@ -277,9 +280,9 @@ If you have been sampling a few percent of traces because the judge was too expe
 Three things to check before you switch it on:
 
 1. **The platform bill, not the judge bill.** On LangSmith, every evaluated trace moves to extended retention, which adds $2.50 per 1K traces, six times the Jev cost. Price the traces first.
-2. **What you will do with a score that arrives a minute late.** Both online evaluators landed on the trace 70 to 110 seconds after the run ended, almost all of it LangSmith's queue. Fine for dashboards and daily alerts. Not fine for blocking or routing a live response; that needs a call from inside the agent, where Jev's 0.4 seconds does matter.
+2. **What you will do with a score that arrives a minute late.** Both online evaluators landed on the trace 40 to 125 seconds after the run ended, with medians of 69 and 80 seconds, almost all of it LangSmith's queue. Fine for dashboards and daily alerts. Not fine for blocking or routing a live response; that needs a call from inside the agent, where Jev's 0.4 seconds does matter.
 3. **Which traces it will skip.** Of my 300 runs, 13 failed on the agent's recursion limit and the evaluators never saw them, because they only fire on successful runs. One more was a 12-tool-call trace whose state passed Jev's 32K-token limit, and Jev's evaluator failed on it while the other four judges scored it. Decide what should happen to those before you trust the coverage number.
 
-On what the scores are worth: the decision models give a usable drift signal on "is this answer correct" and the LLM judges do not, because the LLMs say 0.98 to almost everything. No judge catches an individual wrong answer, because most wrong answers here were faithful summaries of a web page that disagreed with the reference.
+On what the scores are worth: the decision models give a usable drift signal on "is this answer correct" and the LLM judges do not, because the LLMs score almost everything near 1.0. No judge reliably catches an individual wrong answer: most wrong answers here repeated a web page that disagreed with the reference, and the few that no page supported got past every judge too.
 
 > Use a decision model online for aggregate quality tracking and for structural questions like "did the agent answer". Keep a reference-based check for per-answer correctness.
