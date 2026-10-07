@@ -79,7 +79,7 @@ def main():
     if args.judge == "pplx":
         ledger.check("perplexity", n_calls * ledger.cost_pplx(int(avg_tok * 1.2)), "direct Perplexity Decisions calls")
     elif args.judge == "oai":
-        ledger.check("openai", n_calls * ledger.cost_openai("gpt-6-luna-decisions", int(avg_tok * 1.3), 0), "direct OpenAI Decisions calls (price assumed)")
+        ledger.check("openai", n_calls * ledger.cost_openai("gpt-6-luna-decisions", int(avg_tok * 1.3), 0), "direct OpenAI Decisions calls")
     else:
         ledger.check("openai", n_calls * ledger.cost_openai("gpt-6-luna", int(avg_tok) + 100, 100), "direct gpt-6-luna judge calls")
     print(f"[plan] judge {args.judge}: avg state {avg_tok:.0f} tokens; {n_calls} calls; wall clock about {n_calls*3/60:.0f} min")
