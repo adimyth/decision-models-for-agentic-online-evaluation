@@ -6,7 +6,7 @@
 
 I ran TypeSafe's Jev and gpt-5.6-luna as LangSmith online evaluators on every trace of a live web-research agent, 300 runs at 100% sampling, and checked their verdicts against known answers. Perplexity's and OpenAI's Decisions APIs and gpt-6-luna scored the same traces offline.
 
-Scoring every trace is cheap with any of them, from $0.42 per 1K traces for Jev to $1.91 for gpt-5.6-luna. Perplexity lists nearly Jev's price but bills the trace once per question, so at five questions it costs 4.5× more. The bigger bills sit elsewhere: LangSmith's retention upgrade on every scored trace costs more than any of the judges, and its evaluator queue lands each score about a minute after the run, whichever judge you pick.
+Scoring every trace is cheap with any of them: $0.42 per 1K traces for Jev, $0.94 for OpenAI's Decisions API, up to $1.91 for gpt-5.6-luna. Perplexity lists nearly Jev's price but bills the trace once per question, so at five questions it costs 4.5× more. The bigger bills sit elsewhere: LangSmith's retention upgrade on every scored trace costs more than any of the judges, and its evaluator queue lands each score about a minute after the run, whichever judge you pick.
 
 **No judge, decision model or LLM, can tell you a single answer is wrong when it has no reference to compare against.** Most of the agent's wrong answers faithfully quoted a web page that was itself wrong.
 
@@ -84,9 +84,6 @@ The prompt route is the usual way to build an LLM-as-judge evaluator, and it is 
 
 The first two ran live as LangSmith online evaluators; the other three scored the same traces offline afterwards, so they have cost and accuracy numbers but no lag.
 
-> [!NOTE]
-> **Coming next:** Cloudflare's [Clef](https://blog.cloudflare.com/clef-decision-models/). OpenAI's Decisions API opened in public beta on October 6 and is included above.
-
 This is what three of the five questions look like as Jev receives them. The `state` is the trace; `{{input}}` and `{{output}}` are LangSmith variables holding the run's input and output.
 
 ```json
@@ -122,7 +119,18 @@ This is what three of the five questions look like as Jev receives them. The `st
 }
 ```
 
-For the chat models the same questions are written out as prose in the prompt, and a JSON schema forces the reply into `{"llm_correct": 0.93, "llm_confidence": 3, "llm_outcome": "answered", ...}`.
+For the chat models the same questions are written out as prose in the prompt, and a JSON schema forces the reply into this shape:
+
+```json
+{
+  "llm_answered": 1.0,
+  "llm_grounded": 1.0,
+  "llm_correct": 0.93,
+  "llm_confidence": 3,
+  "llm_outcome": "answered",
+  "comment": "One sentence of reasoning."
+}
+```
 
 ### The reference and the measurements
 
@@ -170,17 +178,15 @@ This is what one scored trace looks like, with all five judges' feedback keys on
 
 ## What it cost
 
-<div className="wide-table">
+| Judge | Cost per 1K traces | Billed input tokens per trace |
+|---|---|---|
+| Jev | $0.42 | 10K |
+| OpenAI Decisions | $0.94 | 9.4K |
+| gpt-6-luna | $0.95 | 9K |
+| Perplexity Decisions | $1.89 | 47K |
+| gpt-5.6-luna | $1.91 | 9K |
 
-| | Agent run | Jev | OpenAI Decisions | gpt-6-luna | gpt-5.6-luna | Perplexity Decisions |
-|---|---|---|---|---|---|---|
-| Per trace, measured | $0.0038 | $0.00042 | $0.00094* | $0.00095 | $0.0019 | $0.0019 |
-| Per 1K traces | $3.77 | $0.42 | $0.94* | $0.95 | $1.91 | $1.89 |
-| Billed input tokens per trace | | 10K | 9.4K | 9K | 9K | 47K |
-
-</div>
-
-Each figure uses the input tokens the vendor itself billed for the same rendered state, which carries fetched web pages. *OpenAI has not published a Decisions API price during the beta; its figures assume gpt-6-luna's input rate of $0.10 per million tokens.
+Each figure uses the input tokens the vendor itself billed for the same rendered state, which carries fetched web pages, at its published rate. OpenAI [prices](https://developers.openai.com/api/docs/guides/decisions#pricing-and-availability) the Decisions API at $0.10 per million input tokens, with no output or cache charges.
 
 ![Judge cost per evaluated trace](img/cost.png)
 
@@ -210,30 +216,35 @@ The decision models answer in under a second and the LLMs in about two, but on t
 
 ## Do the scores mean anything
 
-First the ground truth, which the judges never see. Of the 287 answers the research agent produced, the SimpleQA grader found 268 right, 17 wrong and 2 not attempted. Those 17 wrong answers are the test: a useful judge should score them lower than the 268 right ones. Seventeen is a thin basis, so treat what follows as indicative.
+First the ground truth, which the judges never see. Of the 287 answers the research agent produced, the SimpleQA grader found 268 right, 17 wrong and 2 not attempted. A useful judge should score the 17 wrong answers lower than the 268 right ones. Seventeen is a thin basis, so treat what follows as indicative.
 
-(Chart: average correct score given to the 17 wrong answers, per judge. See metrics.json.)
+### The 268 right answers
 
-All five judges scored the 268 right answers high on average (Jev 0.87, Perplexity 0.97, OpenAI Decisions 0.98, gpt-6-luna 1.00, gpt-5.6-luna 0.99), so the whole difference between them is in how they scored the 17 wrong ones. gpt-5.6-luna gave wrong answers 0.96: it was fooled almost every time. Jev gave them 0.67: still above 0.5, but a clear step down from the 0.87 it gave right answers.
+(Chart: each judge's correct score on the 268 right answers. See metrics.json.)
+
+Every judge called nearly all of them correct. The two LLM judges and OpenAI's Decisions API put almost every right answer at or near 1.0. Jev's scores spread lower, averaging 0.86, and it put three right answers below the line; OpenAI's Decisions API put one there.
+
+### The 17 wrong answers
+
+(Chart: each judge's correct score on the 17 wrong answers. See metrics.json.)
+
+This is where a judge has to earn its place, and none does it per answer. gpt-5.6-luna scored every wrong answer 0.7 or higher and averaged 0.96: it was fooled every time. The decision models scored wrong answers lower, Jev most of all at 0.71, but almost every dot still sits on the "correct" side. Jev pushed two wrong answers below 0.5, and Perplexity, OpenAI's Decisions API and gpt-6-luna one each.
+
+### Ranking right above wrong
 
 
 
-AUROC asks a different question: if you pick one right and one wrong answer at random, how often does the judge score the right one higher? Perplexity leads because its scores are very consistent, so even a small step down sorts cleanly.
+AUROC ignores the threshold and asks only whether right answers outscore wrong ones. Perplexity leads because its scores are very consistent, so even a small step down sorts cleanly. All three decision models beat both LLM judges.
 
-| Caught at a 0.5 threshold | Jev | Perplexity Decisions | OpenAI Decisions | gpt-6-luna | gpt-5.6-luna |
-|---|---|---|---|---|---|
-| Wrong answers caught | 2 of 17 | 1 of 17 | 1 of 17 | 1 of 17 | 0 of 17 |
-| Right answers wrongly flagged | 3 of 267 | 0 of 268 | 1 of 268 | 0 of 268 | 0 of 268 |
-
-Read the two charts in three lines.
+Read the charts in three lines.
 
 1. **All five judges give the same yes or no verdict on 276 of 286 traces**, and none catches more than two of the 17 wrong answers. A reference-free judge cannot see that a faithfully quoted web page disagrees with the gold answer.
-2. **They differ in how much the score drops when the agent is wrong.** Jev by 0.20, OpenAI Decisions by 0.13, Perplexity by 0.11, gpt-6-luna by 0.09, gpt-5.6-luna by 0.03.
-3. **That movement is what makes a score usable on a drift chart.** If the agent started getting more answers wrong, Jev's daily average would visibly fall, the other two decision models' would dip, and gpt-5.6-luna's would barely move.
+2. **They differ in how much the average drops when the agent is wrong.** Jev by 0.15, OpenAI's Decisions API by 0.13, Perplexity by 0.11, gpt-6-luna by 0.09, gpt-5.6-luna by 0.04.
+3. **That drop is what makes a score usable on a drift chart.** If the agent started getting more answers wrong, the decision models' daily average would visibly fall, and gpt-5.6-luna's would barely move.
 
 So, can you trust them? On a single trace, no judge here can be trusted to say whether the agent's answer is correct; alerting on one score would miss nearly every real error. Over a day of traces, the decision models can be trusted to show the agent getting worse, and the LLM judges cannot. On the structural questions the judges can be trusted per trace: every judge's `answered` score matched the gold "not attempted" label on all 286 traces, and all five picked the same outcome on 285 of them.
 
-Repeatability did not separate them. Twenty states sent six times each produced no flipped verdicts from any judge; Perplexity and OpenAI Decisions returned identical probabilities every time, the LLMs moved by 0.003, Jev by 0.008.
+Repeatability did not separate them. Twenty states sent six times each produced no flipped verdicts from any judge; Perplexity and OpenAI's Decisions API returned identical probabilities every time, the LLMs moved by 0.003, Jev by 0.008.
 
 ## Where Jev was wrong
 
@@ -259,7 +270,7 @@ If you have been sampling a few percent of traces because the judge was too expe
 | Judge | Cost per trace |
 |---|---|
 | Jev | about four hundredths of a cent |
-| OpenAI Decisions*, gpt-6-luna | about a tenth of a cent |
+| OpenAI Decisions, gpt-6-luna | about a tenth of a cent |
 | gpt-5.6-luna, Perplexity | a fifth of a cent |
 | The agent run itself | four tenths of a cent |
 

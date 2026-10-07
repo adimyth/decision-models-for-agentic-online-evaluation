@@ -13,7 +13,7 @@ PRICES = {  # USD per million tokens (input, output)
     "gpt-5.6-luna": (0.20, 1.20),  # verified 2026-10-03 from public pricing trackers
     "jev-1.13.0": (0.042, 0.0),
     "pplx-decider-v1-27b": (0.04, 0.0),
-    "gpt-6-luna-decisions": (0.10, 0.0),  # unpublished in beta; assumed equal to gpt-6-luna input rate
+    "gpt-6-luna-decisions": (0.10, 0.0),  # published rate: input only, no output or cache charges
 }
 JEV_OVERHEAD_TOKENS = 270
 

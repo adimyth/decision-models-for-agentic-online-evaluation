@@ -15,16 +15,16 @@ The question: if a judge is cheap and fast enough, can you score **every** produ
 
 | | Jev | Perplexity Decisions | OpenAI Decisions | gpt-6-luna | gpt-5.6-luna |
 |---|---|---|---|---|---|
-| Cost per 1K traces, five questions | $0.42 | $1.89 | $0.94* | $0.95 | $1.91 |
+| Cost per 1K traces, five questions | $0.42 | $1.89 | $0.94 | $0.95 | $1.91 |
 | Billed input tokens per trace | 10K | 47K | 9.4K | 9K | 9K |
 | Direct call latency, p50 | 0.42 s | 0.67 s | 0.52 s | 2.2 s | 2.09 s |
 | Run end to score on trace, p50 (LangSmith online evaluator) | 69 s | – | – | – | 80 s |
 | Traces scored, of 287 | 286 | 287 | 287 | 287 | 287 |
-| Mean `correct` score, agent right / wrong | 0.87 / 0.67 | 0.97 / 0.86 | 0.98 / 0.85 | 1.00 / 0.91 | 0.99 / 0.96 |
+| Mean `correct` score, agent right / wrong | 0.86 / 0.71 | 0.97 / 0.86 | 0.98 / 0.85 | 1.00 / 0.91 | 1.00 / 0.96 |
 | AUROC, right vs wrong | 0.83 | 0.90 | 0.80 | 0.74 | 0.72 |
 | Wrong answers caught at p < 0.5 | 2 of 17 | 1 of 17 | 1 of 17 | 1 of 17 | 0 of 17 |
 
-\* OpenAI has not published a Decisions API price during the beta; its cost assumes gpt-6-luna's input rate of $0.10 per million tokens.
+OpenAI prices the Decisions API at $0.10 per million input tokens, with no output or cache charges ([pricing](https://developers.openai.com/api/docs/guides/decisions#pricing-and-availability)).
 
 Three things worth knowing:
 
@@ -105,8 +105,4 @@ Note that calls LangSmith makes with your keys (the two online evaluators) are b
 - `gpt-6-luna`: $0.10 / $0.50.
 - `jev-1.13.0`: $0.042 per million input tokens, output free, 32K-token state limit.
 - `pplx-decider-v1-27b`: $0.04 per million input tokens, output free, 262K-token limit, bills the state once per question.
-- OpenAI Decisions (`gpt-6-luna`, public beta from 6 October 2026): price unpublished; bills the state once per request.
-
-## Not yet run
-
-Cloudflare's Clef, which speaks the same question format as Jev and would slot into `judge_direct.py` with a client like `pplx_client.py`.
+- OpenAI Decisions (`gpt-6-luna`, public beta from 6 October 2026): $0.10 per million input tokens, no output or cache charges; bills the state once per request.
