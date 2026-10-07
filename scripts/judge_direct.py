@@ -22,7 +22,7 @@ load_dotenv(ROOT / ".env")
 import tiktoken  # noqa: E402
 from langchain_openai import ChatOpenAI  # noqa: E402
 from langsmith import Client, tracing_context  # noqa: E402
-from jev_online_eval import ledger, pplx_client  # noqa: E402
+from jev_online_eval import ledger, openai_decisions_client, pplx_client  # noqa: E402
 
 ENC = tiktoken.get_encoding("o200k_base")
 
@@ -45,7 +45,7 @@ def render(template: str, mapping: dict) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--judge", choices=["pplx", "luna6"], required=True)
+    ap.add_argument("--judge", choices=["pplx", "luna6", "oai"], required=True)
     ap.add_argument("--tag", default="main")
     ap.add_argument("--repeats", type=int, default=5)
     ap.add_argument("--repeat-n", type=int, default=20)
@@ -54,6 +54,7 @@ def main():
     jev_q, jev_t, llm_t, llm_schema = load_configs()
     # Perplexity keys: rename jev_* question names to pplx_* so feedback keys stay distinct
     pplx_q = {k.replace("jev_", "pplx_"): v for k, v in jev_q.items()}
+    oai_q = {k.replace("jev_", "oai_"): v for k, v in jev_q.items()}
     rows = [json.loads(l) for l in (ROOT / "results" / f"runs_{args.tag}.jsonl").read_text().splitlines() if l.strip()]
     rows = [r for r in rows if r.get("ok")][: args.limit]
     client = Client()
@@ -68,7 +69,7 @@ def main():
         if run is None:
             continue
         inp, out = run.inputs or {}, run.outputs or {}
-        if args.judge == "pplx":
+        if args.judge in ("pplx", "oai"):
             st = render(jev_t, {"input": inp, "output": out})
         else:
             st = render(llm_t, {"var1": inp, "var2": out.get("messages", [])})
@@ -77,6 +78,8 @@ def main():
     n_calls = len(states) + args.repeats * min(args.repeat_n, len(states))
     if args.judge == "pplx":
         ledger.check("perplexity", n_calls * ledger.cost_pplx(int(avg_tok * 1.2)), "direct Perplexity Decisions calls")
+    elif args.judge == "oai":
+        ledger.check("openai", n_calls * ledger.cost_openai("gpt-6-luna-decisions", int(avg_tok * 1.3), 0), "direct OpenAI Decisions calls (price assumed)")
     else:
         ledger.check("openai", n_calls * ledger.cost_openai("gpt-6-luna", int(avg_tok) + 100, 100), "direct gpt-6-luna judge calls")
     print(f"[plan] judge {args.judge}: avg state {avg_tok:.0f} tokens; {n_calls} calls; wall clock about {n_calls*3/60:.0f} min")
@@ -86,6 +89,12 @@ def main():
             llm_schema, method="json_schema", include_raw=True)
 
     def ask(st):
+        if args.judge == "oai":
+            j = openai_decisions_client.ask(st, oai_q)
+            tok = j["usage"].get("input_tokens") or 0
+            cost = ledger.cost_openai("gpt-6-luna-decisions", tok, 0) if j["answers"] else 0.0
+            ledger.add("openai", cost)
+            return {**j, "cost_usd": cost}
         if args.judge == "pplx":
             j = pplx_client.ask(st, pplx_q)
             tok = j["usage"].get("input_tokens") or 0

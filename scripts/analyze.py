@@ -193,7 +193,7 @@ def main():
 
     # ---- extra direct judges (pplx, luna6)
     extra = {}
-    for judge in ("pplx", "luna6"):
+    for judge in ("pplx", "luna6", "oai"):
         d = load(f"direct_{judge}", args.tag)
         if not d:
             continue
@@ -201,8 +201,8 @@ def main():
 
         def corr_p(x):
             a = x[judge].get("answers") or {}
-            if judge == "pplx":
-                return (a.get("pplx_correct") or {}).get("noul")
+            if judge in ("pplx", "oai"):
+                return (a.get(f"{judge}_correct") or {}).get("noul")
             return a.get("luna6_correct")
 
         lat = [x[judge]["latency_s"] for x in d0.values() if x[judge].get("answers") and x[judge].get("latency_s")]

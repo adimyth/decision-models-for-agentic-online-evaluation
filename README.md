@@ -2,31 +2,33 @@
 
 Code, data and analysis behind the essay *Decision models for agentic online evaluation*.
 
-The question: if a judge is cheap and fast enough, can you score **every** production trace of an agent instead of sampling a few percent, and are the scores worth having? The judges compared are TypeSafe's **Jev** and Perplexity's **Decisions API** (decision models that answer typed questions with probabilities) against **gpt-5.6-luna** and **gpt-6-luna** used as conventional LLM judges.
+The question: if a judge is cheap and fast enough, can you score **every** production trace of an agent instead of sampling a few percent, and are the scores worth having? The judges compared are TypeSafe's **Jev**, Perplexity's **Decisions API** and OpenAI's **Decisions API** (decision models that answer typed questions with probabilities) against **gpt-5.6-luna** and **gpt-6-luna** used as conventional LLM judges.
 
 ## What was run
 
 1. A small web-research agent (Deep Agents, gpt-5.6-luna, `web_search` + `fetch_page`) answered 300 questions from OpenAI's SimpleQA set, traced to one LangSmith project. 287 finished; 13 hit the recursion limit.
 2. Two **LangSmith online evaluators** scored every finished trace at 100% sampling with the same five questions: one on Jev (`jev-1.13.0`), one on gpt-5.6-luna with the questions in a prompt and a JSON reply.
 3. Every final answer was graded against its SimpleQA gold answer (`CORRECT` / `INCORRECT` / `NOT_ATTEMPTED`), giving 268 / 17 / 2.
-4. The exact rendered state of every trace was sent **directly** to all four judges to measure call latency, billed tokens and repeatability (20 states × 6 repeats). Perplexity Decisions and gpt-6-luna ran only on this offline path; their verdicts were posted back onto the traces as feedback.
+4. The exact rendered state of every trace was sent **directly** to all five judges to measure call latency, billed tokens and repeatability (20 states × 6 repeats). Perplexity Decisions, OpenAI Decisions and gpt-6-luna ran only on this offline path; Perplexity's and gpt-6-luna's verdicts were also posted back onto the traces as feedback.
 
 ## Headline numbers
 
-| | Jev | Perplexity Decisions | gpt-6-luna | gpt-5.6-luna |
-|---|---|---|---|---|
-| Cost per 1K traces, five questions | $0.42 | $1.89 | $0.95 | $1.91 |
-| Billed input tokens per trace | 10K | 47K | 9K | 9K |
-| Direct call latency, p50 | 0.42 s | 0.67 s | 2.2 s | 2.09 s |
-| Run end to score on trace, p50 (LangSmith online evaluator) | 69 s | – | – | 80 s |
-| Traces scored, of 287 | 286 | 287 | 287 | 287 |
-| Mean `correct` score, agent right / wrong | 0.87 / 0.67 | 0.97 / 0.86 | 1.00 / 0.91 | 0.99 / 0.96 |
-| AUROC, right vs wrong | 0.83 | 0.90 | 0.74 | 0.72 |
-| Wrong answers caught at p < 0.5 | 2 of 17 | 1 of 17 | 1 of 17 | 0 of 17 |
+| | Jev | Perplexity Decisions | OpenAI Decisions | gpt-6-luna | gpt-5.6-luna |
+|---|---|---|---|---|---|
+| Cost per 1K traces, five questions | $0.42 | $1.89 | $0.94* | $0.95 | $1.91 |
+| Billed input tokens per trace | 10K | 47K | 9.4K | 9K | 9K |
+| Direct call latency, p50 | 0.42 s | 0.67 s | 0.52 s | 2.2 s | 2.09 s |
+| Run end to score on trace, p50 (LangSmith online evaluator) | 69 s | – | – | – | 80 s |
+| Traces scored, of 287 | 286 | 287 | 287 | 287 | 287 |
+| Mean `correct` score, agent right / wrong | 0.87 / 0.67 | 0.97 / 0.86 | 0.98 / 0.85 | 1.00 / 0.91 | 0.99 / 0.96 |
+| AUROC, right vs wrong | 0.83 | 0.90 | 0.80 | 0.74 | 0.72 |
+| Wrong answers caught at p < 0.5 | 2 of 17 | 1 of 17 | 1 of 17 | 1 of 17 | 0 of 17 |
+
+\* OpenAI has not published a Decisions API price during the beta; its cost assumes gpt-6-luna's input rate of $0.10 per million tokens.
 
 Three things worth knowing:
 
-- **Perplexity bills the state once per question.** One state with 1, 2 and 5 questions billed 5.6K, 11.1K and 27.6K tokens; Jev billed 5.8K, 5.9K and 6.2K. Near-identical list prices, 4.5× different cost per trace at five questions.
+- **Perplexity bills the state once per question.** One state with 1, 2 and 5 questions billed 5.6K, 11.1K and 27.6K tokens; Jev billed 5.8K, 5.9K and 6.2K; OpenAI Decisions 5.1K, 5.3K and 5.8K. Near-identical list prices, 4.5× different cost per trace at five questions.
 - **The LangSmith queue, not the judge, sets the lag.** Both online evaluators landed 70 to 110 s after the run ended; the judges themselves take 0.4 s and 2 s.
 - **No judge catches individual wrong answers** (most are faithful quotes of a web page that disagrees with gold), but the decision models' scores drop when the agent is wrong and the LLMs' barely move, so only the decision models give a usable drift signal.
 
@@ -40,6 +42,7 @@ src/jev_online_eval/
   questions.py      the five questions (wording adapted from Openlayer's jevals)
   jev_client.py     POST https://api.typesafe.ai/v1/systemone, retries on 429/529
   pplx_client.py    POST https://api.perplexity.ai/v1/decisions, same wire shapes
+  openai_decisions_client.py  POST https://api.openai.com/v1/decisions; converts to and from the Jev shapes
   llm_judge.py      gpt-5.6-luna with the same questions in a prompt, JSON schema reply
   state.py          compact judge state from a LangSmith run (used for smoke tests)
   ledger.py         spend ledger; every script prints projected cost and aborts at 80% of a cap
@@ -49,7 +52,7 @@ scripts/
   evaluator_runs.py     pull the evaluators' own runs (latency, tokens, cost)
   grade_gold.py         SimpleQA grading of each answer against gold
   judge_latency.py      direct calls to Jev and gpt-5.6-luna with the exact online state
-  judge_direct.py       the same for extra judges: --judge pplx | luna6
+  judge_direct.py       the same for extra judges: --judge pplx | luna6 | oai
   post_extra_feedback.py  post extra judges' verdicts onto the traces (extend_trace_retention=False)
   analyze.py            coverage, lag, cost, accuracy vs gold, agreement, misses -> results/metrics.json
   charts.py             the PNG charts in essay/img (the site uses SVG components instead)
@@ -61,6 +64,7 @@ results/
   direct_main.jsonl           direct calls: Jev and gpt-5.6-luna (rep 0 = first pass, 1..5 = repeats)
   direct_pplx_main.jsonl      direct calls: Perplexity Decisions
   direct_luna6_main.jsonl     direct calls: gpt-6-luna
+  direct_oai_main.jsonl       direct calls: OpenAI Decisions
   jev-online_prompt.json      the Jev evaluator exactly as LangSmith saved it (questions, model)
   llm-online_prompt.json      the gpt-5.6-luna evaluator exactly as LangSmith saved it (prompt, schema)
   metrics.json                everything analyze.py computes
@@ -86,6 +90,7 @@ uv run scripts/grade_gold.py --tag main
 uv run scripts/judge_latency.py --tag main --repeats 5 --repeat-n 20            # ~17 min
 uv run scripts/judge_direct.py --judge pplx --tag main --repeats 5 --repeat-n 20
 uv run scripts/judge_direct.py --judge luna6 --tag main --repeats 5 --repeat-n 20
+uv run scripts/judge_direct.py --judge oai --tag main --repeats 5 --repeat-n 20
 uv run scripts/post_extra_feedback.py --tag main
 uv run scripts/analyze.py --tag main
 ```
@@ -100,7 +105,8 @@ Note that calls LangSmith makes with your keys (the two online evaluators) are b
 - `gpt-6-luna`: $0.10 / $0.50.
 - `jev-1.13.0`: $0.042 per million input tokens, output free, 32K-token state limit.
 - `pplx-decider-v1-27b`: $0.04 per million input tokens, output free, 262K-token limit, bills the state once per question.
+- OpenAI Decisions (`gpt-6-luna`, public beta from 6 October 2026): price unpublished; bills the state once per request.
 
 ## Not yet run
 
-OpenAI's Decisions API (access pending) and Cloudflare's Clef, which speaks the same question format as Jev and would slot into `judge_direct.py` with a client like `pplx_client.py`.
+Cloudflare's Clef, which speaks the same question format as Jev and would slot into `judge_direct.py` with a client like `pplx_client.py`.
